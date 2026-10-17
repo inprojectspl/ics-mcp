@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -67,7 +68,11 @@ class Settings(BaseSettings):
     def token_fallback_path_resolved(self) -> Path:
         if self.mcp_token_fallback_path:
             return Path(self.mcp_token_fallback_path)
-        return Path(user_data_dir("ics-mcp")) / "credentials.json"
+        # One file per keyring service, so profiles stay apart without a keyring.
+        name = "credentials.json"
+        if self.mcp_keyring_service != "ics-mcp":
+            name = f"credentials-{re.sub(r'[^A-Za-z0-9._-]', '_', self.mcp_keyring_service)}.json"
+        return Path(user_data_dir("ics-mcp")) / name
 
     @property
     def issuer(self) -> str:
