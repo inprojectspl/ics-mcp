@@ -139,7 +139,7 @@ Every setting is an environment variable, see [`ics_mcp/config.py`](./ics_mcp/co
 | `ICS_MCP_STATELESS` | `false` | Stateless HTTP for several replicas, see [HTTP mode](#http-mode). |
 | `ICS_MCP_EXTRA_ORIGINS` | empty | Comma-separated browser origins allowed besides the server's own. |
 | `ICS_MCP_KEYRING_SERVICE` | `ics-mcp` | Keyring service name. Use different names to keep several token profiles. |
-| `ICS_MCP_TOKEN_FALLBACK_PATH` | platform data dir, `credentials.json` | Token file used when no OS keyring is available. |
+| `ICS_MCP_TOKEN_FALLBACK_PATH` | platform data dir, `credentials.json` (`credentials-<service>.json` for another keyring service) | Token file used when no OS keyring is available. |
 | `ICS_MCP_DEFAULT_CONFIRM` | `interactive` | Initial confirm mode: `interactive`, `yolo` or `dry_run` (`ask` is a legacy alias of `interactive`). |
 | `ICS_MCP_ALLOW_YOLO` | `false` | Whether the model may switch its own session to `yolo`. |
 | `ICS_MCP_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, ... |

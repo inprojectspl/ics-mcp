@@ -127,6 +127,15 @@ class AssetMeta(BaseModel):
     estimated_tokens: int | None = None
     #: pdf_doc only: OCR of the current version.
     ocr: OcrState | None = None
+    # Single-document reads only (`/meta`), so an edit can start from the
+    # stored values: `ics_asset_set_meta` writes these.
+    summary_version: int | None = None
+    maintainer_id: UUID | None = None
+    review_due_at: datetime | None = None
+    reviewed_at: datetime | None = None
+    reviewed_by: UUID | None = None
+    language: str | None = None
+    properties: dict[str, Any] | None = None
 
 
 class DocTypeOut(BaseModel):
@@ -212,7 +221,7 @@ class ResolvedShare(BaseModel):
 class ResolvedAsset(BaseModel):
     id: UUID
     slug: str
-    title: str
+    title: str | None
     kind: AssetKind
     version: int
     entry_path: str | None

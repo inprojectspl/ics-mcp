@@ -185,3 +185,20 @@ async def test_resolve_truncation_hint_points_at_share_resolve(real_client, resp
     assert payload["truncated"] is True
     assert "ics_share_resolve" in payload["hint"]
     assert "ics_asset_read" not in payload["hint"]
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_resolve_accepts_a_document_without_title(real_client, respx_mock, make_mcp):
+    mcp = make_mcp(share)
+    body = _resolve_response()
+    body["asset"]["title"] = None
+    respx_mock.post(f"{ICS}/api/share/{TOKEN}/resolve").mock(
+        return_value=httpx.Response(200, json=body)
+    )
+
+    payload = await call_tool(mcp, "ics_share_resolve", {"share_link": TOKEN})
+
+    assert payload["asset"]["slug"] == "abc"
+    assert payload["asset"]["title"] is None
+    assert payload["content"] == "# Hello"

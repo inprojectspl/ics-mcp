@@ -89,8 +89,8 @@ returns `auth_timeout`; ask again and a new attempt starts.
 - The tokens go to the operating system keyring: the macOS Keychain, the Windows Credential
   Manager, or libsecret on Linux, under the service name `ics-mcp` and the account `default`.
 - If no keyring is available, ics-mcp writes them to a `credentials.json` file in its data
-  directory, readable only by your user. You can set another location with
-  `ICS_MCP_TOKEN_FALLBACK_PATH`.
+  directory, readable only by your user (`credentials-<service>.json` when you set
+  `ICS_MCP_KEYRING_SERVICE`). You can set another location with `ICS_MCP_TOKEN_FALLBACK_PATH`.
 - With the ICS defaults an access token is valid for one hour and is renewed automatically, so
   you are not asked again. The renewal (refresh) token lasts 30 days and changes on every use. If
   you do not use the assistant for longer than that, you are asked to sign in again.
@@ -140,7 +140,8 @@ cmdkey /delete:ics-mcp
 ```
 
 If you set `ICS_MCP_KEYRING_SERVICE`, use that name instead of `ics-mcp`. If your tokens were in
-the fallback file (no keyring), delete that `credentials.json` file.
+the fallback file (no keyring), delete that `credentials.json` (or `credentials-<service>.json`)
+file.
 
 Deleting the entry signs this machine out. The refresh token on the ICS side is not revoked by
 this; it expires on its own (30 days by default). If a device with a valid sign-in is lost, ask

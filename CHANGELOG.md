@@ -19,8 +19,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `ics_asset_meta` returns the fields `ics_asset_set_meta` writes (`review_due_at`, `reviewed_at`,
+  `reviewed_by`, `maintainer_id`, `language`, `properties`, `summary_version`) instead of dropping
+  them.
+- `ics_share_resolve` accepts a shared document without a title instead of failing with
+  `unexpected_response`.
+- `ics_asset_outline` always moves forward: a collection file too large for one response shows
+  part of its headings and the next page starts after it, instead of an empty page that offered
+  the same offset again.
+- `ics_asset_versions` returns a long history in pages (`offset`, `next_offset`, `total`)
+  instead of a size stub.
+- Several ics-mcp processes on one profile refresh the token once, under a lock file, and a
+  process that loses the race keeps the fresh pair instead of deleting it or asking to sign in.
+- Each `ICS_MCP_KEYRING_SERVICE` gets its own fallback file (`credentials-<service>.json`), so
+  profiles stay apart without an OS keyring.
+- The Docker image installs the locked dependencies (`uv sync --frozen`), the same set CI tests.
 - Interactive confirmations work again: the elicitation request is a typed form that FastMCP 3.4
   accepts, so `interactive` mode no longer fails as if the client did not support elicitation.
+
+### Security
+
+- HTTP sessions are bound to the user (`sub`) who opened them, and the per-session state
+  (outline cache, confirm mode) is keyed by the caller too: another user of the same OAuth
+  client can no longer use a known session id.
 
 ## [0.1.0] - 2026-10-17
 

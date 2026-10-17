@@ -597,3 +597,36 @@ async def test_unknown_doc_type_filter_is_invalid_argument(
     assert err["field"] == "doc_type"
     assert err["data"] == {"allowed": ["specification", "decision"]}
     assert "specification" in err["message"]
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_meta_returns_the_fields_set_meta_writes(real_client, respx_mock, make_mcp):
+    from ics_mcp.tools import discovery
+    from tests.conftest import asset_meta
+
+    mcp = make_mcp(discovery)
+    respx_mock.get(f"{ICS}/api/assets/by-slug/abc/meta").mock(
+        return_value=httpx.Response(
+            200,
+            json=asset_meta(
+                review_due_at="2026-12-01T00:00:00Z",
+                reviewed_at="2026-06-01T00:00:00Z",
+                reviewed_by=USER_ID,
+                maintainer_id=OTHER_ID,
+                language="en",
+                properties={"owner_team": "platform"},
+                summary_version=3,
+            ),
+        )
+    )
+
+    payload = await call_tool(mcp, "ics_asset_meta", {"slug_or_id": "abc"})
+
+    assert payload["review_due_at"].startswith("2026-12-01")
+    assert payload["reviewed_at"].startswith("2026-06-01")
+    assert payload["reviewed_by"] == USER_ID
+    assert payload["maintainer_id"] == OTHER_ID
+    assert payload["language"] == "en"
+    assert payload["properties"] == {"owner_team": "platform"}
+    assert payload["summary_version"] == 3

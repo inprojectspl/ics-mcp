@@ -10,8 +10,9 @@ rotating refresh token) are stored in the **OS keyring**:
 - Linux: libsecret (gnome-keyring / KWallet).
 
 If no keyring is available, it falls back to an encrypted file
-`platformdirs.user_data_dir("ics-mcp")/credentials.json` (Fernet, key
-derived from the hostname and user id; file mode `0600`).
+`platformdirs.user_data_dir("ics-mcp")/credentials.json`, or
+`credentials-<service>.json` for another `ICS_MCP_KEYRING_SERVICE` (Fernet,
+key derived from the hostname and user id; file mode `0600`).
 
 ## Headless / SSH
 

@@ -111,6 +111,11 @@ class TokenStore:
         # to refresh must use `load_fresh()`, never this copy.
         self._cached: TokenPair | None = None
 
+    @property
+    def lock_path(self) -> Path:
+        """Lock file of this profile, for `refresh_lock`."""
+        return self.fallback_path.with_name(self.fallback_path.name + ".lock")
+
     # ----------------------- keyring -----------------------
     def _keyring_save(self, pair: TokenPair) -> bool:
         try:

@@ -17,16 +17,24 @@ WORKDIR /app
 # ---------- builder ----------
 FROM base AS builder
 
-COPY pyproject.toml README.md /app/
+COPY --from=ghcr.io/astral-sh/uv:0.12.19 /uv /bin/uv
+
+# The image installs exactly the locked set CI tested (`uv sync --frozen`).
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PROJECT_ENVIRONMENT=/app/.venv
+
+COPY pyproject.toml uv.lock README.md /app/
+RUN uv sync --frozen --no-dev --no-install-project
 COPY ics_mcp /app/ics_mcp
-RUN pip install --upgrade pip \
-    && pip install --prefix=/install /app
+RUN uv sync --frozen --no-dev --no-editable
 
 # ---------- prod ----------
 FROM base AS prod
 
-COPY --from=builder /install /usr/local
-COPY --from=builder /app /app
+COPY --from=builder /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
 
 USER mcp
 EXPOSE 8765

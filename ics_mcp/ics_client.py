@@ -16,6 +16,7 @@ import httpx
 from fastmcp.server.dependencies import get_access_token
 
 from ics_mcp.auth.refresh import refresh_token_grant
+from ics_mcp.auth.refresh_lock import refresh_lock
 from ics_mcp.auth.stdio_oauth import login as stdio_login
 from ics_mcp.auth.token_store import TokenPair, TokenStore
 from ics_mcp.config import Settings
@@ -109,12 +110,21 @@ class ICSClient:
             if pair and not pair.is_expired():
                 return pair
             if pair:  # try refresh first
-                try:
-                    return await refresh_token_grant(
-                        self.settings, self.store, pair, http=self.http
-                    )
-                except ICSError as e:
-                    log.warning("refresh failed; falling back to interactive login", code=e.code)
+                async with refresh_lock(self.store.lock_path):
+                    # The previous holder may be another process that just
+                    # rotated the pair; its refresh token is spent.
+                    pair = self.store.load_fresh()
+                    if pair and not pair.is_expired():
+                        return pair
+                    if pair:
+                        try:
+                            return await refresh_token_grant(
+                                self.settings, self.store, pair, http=self.http
+                            )
+                        except ICSError as e:
+                            log.warning(
+                                "refresh failed; falling back to interactive login", code=e.code
+                            )
             if self.settings.mcp_transport != "stdio":
                 # In HTTP mode the *client* must reauth; we can't open a
                 # browser server-side.
@@ -144,18 +154,21 @@ class ICSClient:
         """Refresh after ICS rejected `rejected_access_token` with a Bearer
         challenge. The stored pair is kept until refresh itself fails, so the
         next `_ensure_token` still has a refresh token to work with."""
-        async with self._lock:
+        async with self._lock, refresh_lock(self.store.lock_path):
             pair = self.store.load_fresh()
             if pair is None:
                 return
             if pair.access_token != rejected_access_token:
-                # A concurrent request already rotated the pair; refreshing
-                # again would replay a used refresh token and trip reuse
-                # detection on the server.
+                # A concurrent request or process already rotated the pair;
+                # refreshing again would replay a used refresh token and trip
+                # reuse detection on the server.
                 return
             try:
                 await refresh_token_grant(self.settings, self.store, pair, http=self.http)
             except ICSError as e:
+                latest = self.store.load_fresh()
+                if latest is not None and latest.refresh_token != pair.refresh_token:
+                    return  # rotated meanwhile (the lock wait timed out): keep it
                 log.warning("refresh after 401 failed; dropping stored token", code=e.code)
                 self.store.delete()
 

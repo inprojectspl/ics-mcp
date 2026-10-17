@@ -112,14 +112,20 @@ def shape_outline(
     items = out.get(key)
     if payload_chars(out) > cap and isinstance(items, list):
         # Room for the `trimmed` note and hint added below.
-        base = {**out, "trimmed": trimmed | {"next_offset": 10**6}, "hint": "x" * 320}
+        base = {**out, "trimmed": trimmed | {"next_offset": 10**6}, "hint": "x" * 640}
 
         def page(k: int) -> dict[str, Any]:
             return {**base, key: items[:k]}
 
         k = fit_count(len(items), page, cap)
-        if k < len(items):
+        if k == 0:
+            # The first item alone is over the limit; an empty page would
+            # offer the same offset forever, so show what fits of it and move on.
+            out[key] = [_partial_item(items[0], base, key, cap, trimmed)]
+            k = 1
+        else:
             out[key] = items[:k]
+        if k < len(items):
             trimmed["next_offset"] = offset + k
     if payload_chars(out) > cap and out.get("edges"):
         trimmed["edges"] = "omitted"
@@ -130,8 +136,32 @@ def shape_outline(
     return out
 
 
+def _partial_item(
+    item: Any, base: dict[str, Any], key: str, cap: int, trimmed: dict[str, Any]
+) -> Any:
+    """A collection file with as many of its headings as fit `cap`."""
+    if not isinstance(item, dict) or not isinstance(item.get("headings"), list):
+        return item
+    heads = item["headings"]
+    note = {"path": item.get("path"), "shown": 10**6, "total": len(heads)}
+
+    def page(n: int) -> dict[str, Any]:
+        cut = {**base["trimmed"], "file_headings": note}
+        return {**base, "trimmed": cut, key: [{**item, "headings": heads[:n]}]}
+
+    n = fit_count(len(heads), page, cap)
+    trimmed["file_headings"] = {**note, "shown": n}
+    return {**item, "headings": heads[:n]}
+
+
 def _trim_hint(trimmed: dict[str, Any]) -> str:
     parts = []
+    if "file_headings" in trimmed:
+        cut = trimmed["file_headings"]
+        parts.append(
+            f"file {cut['path']!r} shows {cut['shown']} of {cut['total']} headings: read the "
+            f"rest with `ics_asset_read(path={cut['path']!r}, lines='N-M')`"
+        )
     if "max_level" in trimmed:
         parts.append(
             f"headings deeper than level {trimmed['max_level']} left out: read a section with "

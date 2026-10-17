@@ -14,6 +14,7 @@ import pytest
 import respx
 from fastmcp.exceptions import ToolError
 
+from ics_mcp._payload import payload_chars
 from ics_mcp.config import get_settings
 from ics_mcp.tools import discovery, read
 from tests.conftest import ICS, call_tool
@@ -353,3 +354,45 @@ async def test_building_outline_points_to_a_direct_read(real_client, respx_mock,
     second = await call_tool(mcp, "ics_asset_outline", {"slug_or_id": "abc"})
     assert second["summary"] == "Booking API, first draft."
     assert route.call_count == 2
+
+
+def _collection(files: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"slug": "vault", "kind": "md_collection", "version": 1, "files": files}
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_collection_with_one_oversized_file_still_moves_forward(
+    real_client, respx_mock, make_mcp
+):
+    """150 H1 headings in one file: no level cut helps and the file alone is
+    over the limit, so the page shows part of its headings and moves past it
+    instead of an empty page that offers the same offset again."""
+    big = {"path": "big.md", "headings": headings(150, deep=False)}
+    small = {"path": "small.md", "headings": headings(2, deep=False)}
+    respx_mock.get(f"{ICS}/api/assets/by-slug/vault/outline").mock(
+        return_value=httpx.Response(200, json=_collection([big, small]))
+    )
+    cap = 6000
+    monkey = pytest.MonkeyPatch()
+    monkey.setattr(get_settings(), "mcp_response_max_chars", cap)
+    try:
+        mcp = make_mcp(discovery)
+        first = await call_tool(mcp, "ics_asset_outline", {"slug_or_id": "vault"})
+        second = await call_tool(
+            mcp,
+            "ics_asset_outline",
+            {"slug_or_id": "vault", "offset": first["trimmed"]["next_offset"]},
+        )
+    finally:
+        monkey.undo()
+
+    assert [f["path"] for f in first["files"]] == ["big.md"]
+    shown = len(first["files"][0]["headings"])
+    assert 0 < shown < 150
+    assert first["trimmed"]["file_headings"] == {"path": "big.md", "shown": shown, "total": 150}
+    assert "path='big.md'" in first["hint"]
+    assert first["trimmed"]["next_offset"] == 1
+    assert payload_chars(first) <= cap
+    assert [f["path"] for f in second["files"]] == ["small.md"]
+    assert "trimmed" not in second
