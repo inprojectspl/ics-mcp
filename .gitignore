@@ -1,0 +1,63 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# ---- Virtual envs / package managers ----
+.venv/
+venv/
+env/
+.python-version
+
+# ---- Test + lint caches ----
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.hypothesis/
+
+# ---- Distribution artifacts ----
+*.whl
+*.tar.gz
+
+# ---- Local env / secrets ----
+.env
+.env.*
+!.env.example
+credentials.json
+credentials.json.enc
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ---- IDE / editor ----
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ---- Claude Code local config ----
+.claude/
+
+# ---- Logs / temp ----
+*.log
+*.tmp
+.tmp/
+
+# ---- Generated docs ----
+site/
+docs/_build/

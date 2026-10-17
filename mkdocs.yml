@@ -1,0 +1,97 @@
+site_name: ics-mcp documentation
+site_description: User guide for ics-mcp, the MCP server that lets AI assistants work with documents in ICS.
+site_url: https://inprojectspl.github.io/ics-mcp/
+repo_url: https://github.com/inprojectspl/ics-mcp
+repo_name: inprojectspl/ics-mcp
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; inProjects spółka z o.o. sp.k. Released under the MIT License.
+
+theme:
+  name: material
+  logo: images/ics-mark.svg
+  favicon: images/ics-mark.svg
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  features:
+    - content.action.edit
+    - content.code.copy
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - toc.follow
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/inprojectspl/ics-mcp
+    - icon: material/web
+      link: https://inprojects.ai
+      name: inProjects.ai
+
+plugins:
+  - search
+  - gh-admonitions
+  - redirects:
+      redirect_maps:
+        index.md: guide/README.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+exclude_docs: |
+  requirements.txt
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+nav:
+  - Introduction: guide/README.md
+  - guide/overview.md
+  - guide/getting-started.md
+  - guide/everyday-tasks.md
+  - guide/confirmations-and-safety.md
+  - guide/remote-http.md
+  - guide/troubleshooting.md

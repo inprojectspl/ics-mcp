@@ -1,0 +1,23 @@
+ics-mcp (MCP server for ICS, Internal Content Sharing)
+Copyright (c) 2026 inProjects spółka z o.o. sp.k.
+ul. Harcerzy 3, 71-465 Szczecin, Poland
+NIP: 854-240-20-87, KRS: 0000650754
+
+This product is licensed under the MIT License (see LICENSE).
+
+Names and logos
+---------------
+
+The names "inProjects" and "inProjects.ai" and the inProjects.ai logo belong
+to inProjects spółka z o.o. sp.k. and are not licensed under the MIT License:
+the license covers the software, not these names or the logo. You may keep the
+existing "Built by inProjects.ai" credit and logo unchanged to say where the
+software comes from, but you may not use them for your own products or
+services, or in a way that suggests our endorsement, without our written
+permission.
+
+The logo is in these files:
+  docs/images/inprojects-logo.svg
+  docs/images/inprojects-logo-white.svg
+
+Contact: info@inprojects.pl

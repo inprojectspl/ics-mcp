@@ -1,0 +1,27 @@
+# Snippet to add to ICS production compose. Mount under the `ics` network
+# so it can talk to the backend service directly without going through
+# the public reverse proxy.
+services:
+  mcp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      target: prod
+    environment:
+      ICS_BASE_URL: ${ICS_BASE_URL:-http://backend:8000}
+      ICS_MCP_OAUTH_ISSUER: ${ICS_MCP_OAUTH_ISSUER:-https://ics.example.com}
+      ICS_MCP_RESOURCE_URI: ${ICS_MCP_RESOURCE_URI:-https://mcp.ics.example.com/mcp}
+      ICS_MCP_TRANSPORT: "http"
+      ICS_MCP_HTTP_HOST: "0.0.0.0"
+      ICS_MCP_HTTP_PORT: "8765"
+      ICS_MCP_STATELESS: ${ICS_MCP_STATELESS:-false}
+      ICS_MCP_LOG_LEVEL: ${ICS_MCP_LOG_LEVEL:-INFO}
+      ICS_MCP_EXTRA_ORIGINS: ${ICS_MCP_EXTRA_ORIGINS:-https://claude.ai,https://app.claude.com}
+    depends_on:
+      - backend
+    networks:
+      - ics
+      - edge
+    restart: unless-stopped
+    deploy:
+      replicas: ${ICS_MCP_REPLICAS:-1}

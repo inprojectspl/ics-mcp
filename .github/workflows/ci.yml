@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or pull request cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ matrix.python }}
+          enable-cache: true
+      # `--frozen` fails when uv.lock is out of date with pyproject.toml.
+      # Bytecode compiled at install time keeps the first server start short.
+      - run: uv sync --frozen --extra dev
+        env:
+          UV_COMPILE_BYTECODE: "1"
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy --strict ics_mcp
+      - run: uv run pytest --cov=ics_mcp --cov-report=term --cov-fail-under=85
+
+      # Once per run, not per Python version.
+      - name: Audit runtime dependencies
+        if: matrix.python == '3.12'
+        run: |
+          uv export --frozen --no-dev --no-emit-project --format requirements-txt -o requirements.txt
+          uvx pip-audit --strict -r requirements.txt
+      - name: MCP Inspector smoke test
+        if: matrix.python == '3.12'
+        # The Inspector starts the server with a stripped environment, so the
+        # venv entrypoint and the variables are passed explicitly.
+        run: |
+          inspect() {
+            npx -y @modelcontextprotocol/inspector@2.8.0 --cli .venv/bin/ics-mcp \
+              -e ICS_BASE_URL=http://ics.test -e ICS_MCP_RESOURCE_URI=http://ics.test/mcp \
+              -e ICS_MCP_DEFAULT_CONFIRM=yolo -e FASTMCP_CHECK_FOR_UPDATES=off \
+              --method "$1" | tee "$2"
+          }
+          inspect tools/list inspector-tools.json
+          python scripts/assert_count.py inspector-tools.json tools 53
+          inspect resources/templates/list inspector-templates.json
+          python scripts/assert_count.py inspector-templates.json resourceTemplates 6
+          inspect prompts/list inspector-prompts.json
+          python scripts/assert_count.py inspector-prompts.json prompts 3
+      - name: Build the wheel and sdist
+        if: matrix.python == '3.12'
+        run: uv build

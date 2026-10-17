@@ -1,0 +1,20 @@
+# Sample Caddy block for mcp.ics.<domain>. Add to your existing Caddyfile
+# (or to ingress-nginx if you prefer nginx).
+#
+# Streamable HTTP requires the long-running response stream to flush, so
+# disable proxy buffering. CORS preflight is handled by FastMCP itself.
+
+mcp.ics.example.com {
+    encode gzip zstd
+    log {
+        output stdout
+        format json
+    }
+    reverse_proxy mcp:8765 {
+        # Important for SSE event streams produced by Streamable HTTP.
+        flush_interval -1
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+    }
+}
