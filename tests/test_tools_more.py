@@ -643,3 +643,49 @@ async def test_asset_versions_tolerates_masked_fields(real_client, respx_mock, m
     assert row["author"] == "test.author"
     assert row["storage_prefix"] is None
     assert "@" not in row["author"]
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_long_version_history_comes_in_pages(real_client, respx_mock, make_mcp, monkeypatch):
+    """A history over the response limit used to collapse into a size stub,
+    and the tool had no way to fetch the missing rows."""
+    from ics_mcp._payload import payload_chars
+    from ics_mcp.config import get_settings
+    from ics_mcp.tools import read
+
+    cap = 4000
+    monkeypatch.setattr(get_settings(), "mcp_response_max_chars", cap)
+    rows = [
+        {
+            "version": n,
+            "size_bytes": 10,
+            "storage_prefix": None,
+            "created_at": "2026-03-01T09:00:00Z",
+            "created_by": None,
+            "author": "test.author",
+            "author_email": None,
+            "is_current": n == 120,
+        }
+        for n in range(120, 0, -1)
+    ]
+    mock_resolve(respx_mock)
+    respx_mock.get(f"{ICS}/api/assets/{ASSET_ID}/versions").mock(
+        return_value=httpx.Response(200, json=rows)
+    )
+    mcp = make_mcp(read)
+
+    seen: list[int] = []
+    offset = 0
+    while True:
+        page = await call_tool(mcp, "ics_asset_versions", {"slug_or_id": "abc", "offset": offset})
+        assert "truncated" not in page
+        assert page["total"] == 120
+        assert payload_chars(page) <= cap
+        seen += [v["version"] for v in page["versions"]]
+        if "next_offset" not in page:
+            break
+        assert page["next_offset"] == offset + len(page["versions"]) > offset
+        offset = page["next_offset"]
+
+    assert seen == list(range(120, 0, -1))
