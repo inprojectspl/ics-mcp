@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from urllib.parse import urlsplit
 
 from fastmcp import FastMCP
-from fastmcp.server.auth import RemoteAuthProvider, TokenVerifier
+from fastmcp.server.auth import AccessToken, RemoteAuthProvider, TokenVerifier
 from fastmcp.server.auth.providers.jwt import JWTVerifier
 from pydantic import AnyHttpUrl
 from starlette.requests import Request
@@ -21,6 +21,20 @@ from ics_mcp.auth.token_store import TokenStore
 from ics_mcp.config import Settings, get_settings
 from ics_mcp.ics_client import ICSClient, build_http_client
 from ics_mcp.version import INSTRUCTIONS, PROTOCOL_VERSION, SERVER_INFO
+
+
+class _SubjectBoundAuth(RemoteAuthProvider):
+    """The MCP SDK lets only the principal that opened a session use it,
+    comparing client, issuer and subject; FastMCP's JWT verifier leaves
+    `subject` empty, so two users of one OAuth client could share a session.
+    The token's `sub` fills it in."""
+
+    async def verify_token(self, token: str) -> AccessToken | None:
+        access = await super().verify_token(token)
+        if access is None or access.subject is not None:
+            return access
+        sub = (access.claims or {}).get("sub")
+        return access.model_copy(update={"subject": str(sub)}) if sub else access
 
 
 def http_auth(settings: Settings, verifier: TokenVerifier | None = None) -> RemoteAuthProvider:
@@ -39,7 +53,7 @@ def http_auth(settings: Settings, verifier: TokenVerifier | None = None) -> Remo
         algorithm="RS256",
     )
     parts = urlsplit(settings.mcp_resource_uri)
-    return RemoteAuthProvider(
+    return _SubjectBoundAuth(
         token_verifier=verifier,
         authorization_servers=[AnyHttpUrl(settings.issuer)],
         base_url=f"{parts.scheme}://{parts.netloc}",

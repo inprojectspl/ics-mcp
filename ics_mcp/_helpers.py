@@ -3,6 +3,7 @@ resolution, session caches and the confirm-flow guard."""
 
 from __future__ import annotations
 
+import hashlib
 import inspect
 import re
 from collections.abc import Awaitable, Callable, Mapping
@@ -13,6 +14,7 @@ from uuid import UUID
 
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
+from fastmcp.server.dependencies import get_access_token
 from pydantic import ValidationError
 
 from ics_mcp import session as session_mod
@@ -37,11 +39,19 @@ def err(exc: Exception) -> NoReturn:
 
 
 def session_key(ctx: Context) -> str:
+    """Key of the per-session state. Over HTTP it also names the caller: a
+    session id alone could be presented by another user (in stateless mode
+    nothing checks it), and the state holds their outlines and confirm mode."""
     try:
         sid = getattr(ctx, "session_id", None) or "stdio"
     except RuntimeError:
         sid = "stdio"
-    return f"sid:{sid}"
+    access = get_access_token()
+    if access is None:
+        return f"sid:{sid}"
+    claims = access.claims or {}
+    caller = f"{claims.get('iss')}|{claims['sub']}" if claims.get("sub") else access.token
+    return f"sid:{sid}:{hashlib.sha256(caller.encode()).hexdigest()[:32]}"
 
 
 def get_mode(ctx: Context) -> ConfirmMode:
