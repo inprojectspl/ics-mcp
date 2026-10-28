@@ -71,6 +71,11 @@ HTML bundle, `ics_asset_read` with `format="markdown"` converts a page to Markdo
 lists, tables and links kept, scripts and styles dropped), which is several times cheaper than
 the raw HTML.
 
+On a Markdown file `format="markdown"` drops the HTML comments (`<!-- ... -->`), such as the
+timestamps a transcription tool leaves before every line. Comments in code stay and line numbers
+do not change. The assistant edits from the raw read: a version written from the text without
+comments loses them. `ics_share_resolve` takes the same `format`.
+
 ### Open a share link someone sent you
 
 > "What is in this link? https://ics.example.com/s/AbC123..."

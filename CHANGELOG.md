@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ics_share_resolve` takes `format`; `format="markdown"` there and in `ics_asset_read` reads a Markdown file
+  without HTML comments (e.g. transcript timestamps), line numbers unchanged. Needs ICS with the same option;
+  an older one rejects `format="markdown"` on a Markdown file.
 - Documentation site at <https://inprojectspl.github.io/ics-mcp/>, built with MkDocs from `docs/`.
 
 ### Changed

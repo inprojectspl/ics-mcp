@@ -233,7 +233,7 @@ class ResolvedAsset(BaseModel):
 
 class ShareResolveOut(BaseModel):
     """Response of `POST /api/share/{token}/resolve`: `content` is raw
-    markdown; `tree` only for md_collection, `files` only for html_bundle."""
+    markdown (without HTML comments for `format=markdown`); `tree` only for md_collection, `files` only for html_bundle."""
 
     share: ResolvedShare
     asset: ResolvedAsset

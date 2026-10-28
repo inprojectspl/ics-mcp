@@ -97,12 +97,18 @@ Size and slices:
 - A file over 2000 lines without `lines` or `max_lines` is refused with
   `file_too_large`.
 
-`format="markdown"` (`.html` files only): ICS converts HTML to Markdown;
+`format="markdown"` on an `.html` file: ICS converts HTML to Markdown;
 headings, lists, tables and links keep their structure, tags, scripts and
 styles are dropped. The default choice for reading bundle content (several
 times fewer tokens); fetch raw HTML only when working on the page code.
 `lines` and `total_lines` then refer to the converted text, and a page
 rendered by JavaScript may have a nearly empty source.
+
+On a Markdown file `format="markdown"` drops the HTML comments (`<!-- -->`),
+such as the timestamps a transcription tool leaves before every line;
+comments in code stay. Every line keeps its number, so `lines` and outline
+anchors work as on the raw file. Edit from the raw read: a version written
+from this text loses the comments.
 
 Binary bundle files (images, fonts) fail with 415 by default, with `mime`
 and `size_bytes`; `encoding="base64"` returns `content_base64` (1 MB cap).
@@ -224,7 +230,8 @@ Details: `ics_help('task-context')`.
 - `ics_share_resolve`: a pasted `https://.../s/<token>` link (or a bare
   token) → metadata + raw content in one call; a password share
   needs `password`, `path` reads a specific collection file, `lines="N-M"`
-  does a partial read (max 2000 lines). A role on the asset skips the
+  does a partial read (max 2000 lines), `format="markdown"` drops HTML
+  comments. A role on the asset skips the
   mode gate and does not consume `max_views`.
 
 ## Session

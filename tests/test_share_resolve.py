@@ -104,7 +104,7 @@ async def test_resolve_public_share_from_url(real_client, respx_mock, make_mcp):
 
 @pytest.mark.asyncio
 @respx.mock(assert_all_called=False)
-async def test_resolve_forwards_password_and_path(real_client, respx_mock, make_mcp):
+async def test_resolve_forwards_password_path_and_format(real_client, respx_mock, make_mcp):
     mcp = make_mcp(share)
     route = respx_mock.post(f"{ICS}/api/share/{TOKEN}/resolve").mock(
         return_value=httpx.Response(
@@ -119,12 +119,12 @@ async def test_resolve_forwards_password_and_path(real_client, respx_mock, make_
     payload = await call_tool(
         mcp,
         "ics_share_resolve",
-        {"share_link": TOKEN, "password": "s3cret", "path": "notes/foo.md"},
+        {"share_link": TOKEN, "password": "s3cret", "path": "notes/foo.md", "format": "markdown"},
     )
     assert payload["content"] == "# Foo"
     assert payload["tree"] == ["index.md", "notes/foo.md"]
     sent = json.loads(route.calls.last.request.content)
-    assert sent == {"password": "s3cret", "path": "notes/foo.md"}
+    assert sent == {"password": "s3cret", "path": "notes/foo.md", "format": "markdown"}
 
 
 @pytest.mark.asyncio
