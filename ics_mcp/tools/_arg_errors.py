@@ -1,6 +1,7 @@
 """Argument validation errors in the shape of every other tool error. FastMCP
 validates arguments before the tool body runs, so `map_ics_errors` never sees
-them; this middleware turns pydantic's text into `invalid_argument` with
+them; this middleware turns pydantic's error, which FastMCP wraps in its own
+`ValidationError`, into `invalid_argument` with
 `field` and, for enums, the allowed values."""
 
 from __future__ import annotations
@@ -9,6 +10,7 @@ import re
 from typing import Any
 
 import mcp.types as mt
+from fastmcp.exceptions import ValidationError as FastMCPValidationError
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools import ToolResult
 from pydantic import ValidationError
@@ -74,5 +76,7 @@ class ArgumentErrors(Middleware):
     ) -> ToolResult:
         try:
             return await call_next(context)
-        except ValidationError as exc:
-            raise_tool_error(argument_error(exc))
+        except FastMCPValidationError as exc:
+            if not isinstance(exc.__cause__, ValidationError):
+                raise
+            raise_tool_error(argument_error(exc.__cause__))

@@ -9,8 +9,7 @@ from typing import Any, get_args
 import httpx
 import pytest
 import respx
-from fastmcp.exceptions import ToolError
-from pydantic import ValidationError
+from fastmcp.exceptions import ToolError, ValidationError
 
 from ics_mcp import models as M
 from ics_mcp.config import get_settings
