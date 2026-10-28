@@ -12,8 +12,7 @@ import json
 import httpx
 import pytest
 import respx
-from fastmcp.exceptions import ToolError
-from pydantic import ValidationError
+from fastmcp.exceptions import ToolError, ValidationError
 
 from ics_mcp.tools import (
     discovery,
