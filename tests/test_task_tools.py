@@ -10,8 +10,7 @@ from typing import Any
 import httpx
 import pytest
 import respx
-from fastmcp.exceptions import ToolError
-from pydantic import ValidationError
+from fastmcp.exceptions import ToolError, ValidationError
 
 from ics_mcp._payload import payload_chars
 from ics_mcp.config import get_settings
