@@ -72,6 +72,7 @@ should see it in their UI permanently".
 | Structure of headings / files (no content) | `ics_asset_outline` |
 | Raw markdown | `ics_asset_read` |
 | Page content of an `html_bundle` (text/tables) | `ics_asset_read(format="markdown")` |
+| Markdown without HTML comments (e.g. transcript timestamps) | `ics_asset_read(format="markdown")` |
 | A file from an `html_bundle` (source for editing) | `ics_asset_list_files` → `ics_asset_read(path=...)` |
 | Rendered HTML | `ics_asset_read_rendered` (expensive; prefer `read`) |
 | Version history (who, when) | `ics_asset_versions` |

@@ -45,6 +45,9 @@ def register(mcp: FastMCP) -> None:
             "lines per request; the response carries `total_lines` and "
             "`returned_range`. A file over 2000 lines without `lines` -> error 400 "
             "with pagination instructions.\n"
+            "- `format='markdown'`: the Markdown without HTML comments (e.g. "
+            "the timestamps of a transcript), same line numbers; edit from the "
+            "raw read, not from this one.\n"
             "- html_bundle: metadata plus file list, no content. To "
             "read bundle content use `ics_asset_list_files` + "
             "`ics_asset_read` (do not create a share link just to "
@@ -62,6 +65,7 @@ def register(mcp: FastMCP) -> None:
         password: str | None = None,
         path: str | None = None,
         lines: str | None = None,
+        format: Literal["raw", "markdown"] | None = None,
     ) -> dict[str, Any]:
         token = extract_share_token(share_link)
         body: dict[str, Any] = {}
@@ -71,6 +75,8 @@ def register(mcp: FastMCP) -> None:
             body["path"] = path
         if lines:
             body["lines"] = lines
+        if format:
+            body["format"] = format
         data = await runtime.require_ics().post_json(f"/api/share/{token}/resolve", body)
         # Validation catches contract drift with ICS; truncation protects the
         # LLM context from a huge document. The hint deliberately does not point
