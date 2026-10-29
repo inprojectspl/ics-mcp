@@ -42,6 +42,12 @@ def allowed_origins(settings: Settings) -> frozenset[str]:
 
 
 def build_http_app(mcp: FastMCP, settings: Settings):  # type: ignore[no-untyped-def]
+    if mcp.auth is None:
+        # Without bearer auth every caller would act as the account whose
+        # tokens this process holds; `build_mcp` adds auth only for HTTP.
+        raise RuntimeError(
+            "refusing to serve HTTP without bearer authentication: set ICS_MCP_TRANSPORT=http"
+        )
     return mcp.http_app(
         path="/mcp",
         middleware=[Middleware(OriginGuard, allowed=allowed_origins(settings))],

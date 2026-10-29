@@ -13,7 +13,7 @@ from email.utils import parsedate_to_datetime
 from typing import Any, cast
 
 import httpx
-from fastmcp.server.dependencies import get_access_token
+from fastmcp.server.dependencies import get_access_token, get_http_request
 
 from ics_mcp.auth.refresh import refresh_token_grant
 from ics_mcp.auth.refresh_lock import refresh_lock
@@ -91,6 +91,14 @@ def _retry_after_seconds(value: str | None) -> float:
     return max((when - datetime.now(UTC)).total_seconds(), 0.0)
 
 
+def _over_http() -> bool:
+    try:
+        get_http_request()
+    except RuntimeError:
+        return False
+    return True
+
+
 class ICSClient:
     def __init__(self, settings: Settings, store: TokenStore, http: httpx.AsyncClient) -> None:
         self.settings = settings
@@ -148,6 +156,14 @@ class ICSClient:
                     status=401,
                 )
             return incoming.token
+        if _over_http():
+            # A stdio server exposed by some HTTP runner: the stored tokens
+            # belong to this process's user, never to a remote caller.
+            raise ICSError(
+                "auth_required",
+                "This server is configured for stdio; serve HTTP with ICS_MCP_TRANSPORT=http.",
+                status=401,
+            )
         return (await self._ensure_token()).access_token
 
     async def _refresh_after_challenge(self, rejected_access_token: str) -> None:

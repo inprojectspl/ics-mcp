@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- A server built for stdio is never served over HTTP with its stored tokens: `build_http_app` refuses
+  it, and a tool call arriving over HTTP without bearer auth answers `auth_required` instead of using
+  the local credentials.
 - Dependencies with published advisories are upgraded: fastmcp 3.4.10, authlib 1.9.1, certifi 2026.10.23,
   dnspython 2.9.0, opentelemetry-api 1.45.1. FastMCP now wraps an argument validation error in its own
   `ValidationError`; the `invalid_argument` mapping unwraps it, so tool errors keep their shape.
