@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A ChatGPT connection guide covering remote MCP, OAuth discovery, Google Workspace sign-in,
+  confirmations and HTTP file-upload limits. `scripts/check_remote.py` checks the public metadata
+  and health routes with anonymous GET requests and reports configuration/routing failures.
 - `ics_share_resolve` takes `format`; `format="markdown"` there and in `ics_asset_read` reads a Markdown file
   without HTML comments (e.g. transcript timestamps), line numbers unchanged. Needs ICS with the same option;
   an older one rejects `format="markdown"` on a Markdown file.

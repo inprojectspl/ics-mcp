@@ -19,6 +19,7 @@ and configuration variables is in the [project README](https://github.com/inproj
 | [Everyday tasks](everyday-tasks.md) | Worked examples: finding and reading documents, writing and updating, versions, sharing, PDFs and Word files, the relation graph, task context. |
 | [Confirmations and safety](confirmations-and-safety.md) | Which operations ask before they run, the three confirm modes and how to choose one. |
 | [Remote use over HTTP](remote-http.md) | When ics-mcp runs as a shared server (for example for claude.ai) and what changes for you. |
+| [Connect ChatGPT to ICS](chatgpt.md) | Configure a custom MCP connection with Google Workspace sign-in, check discovery, and verify reading and writing. |
 | [Troubleshooting](troubleshooting.md) | Error codes you may see, what they mean and how to fix them. |
 
 ## Who this is for

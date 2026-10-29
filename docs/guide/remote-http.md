@@ -27,6 +27,9 @@ You need the server's MCP address from your ICS operator, for example
 In claude.ai, the deployment guide describes the path: Settings, Connectors, Add, then enter the
 address. Other clients that support remote MCP servers have a similar setting.
 
+For ChatGPT, use [Connect ChatGPT to ICS](chatgpt.md), including the operator's discovery checks
+and the first read/write test. Google Workspace SSO remains on the ICS side of that connection.
+
 The client then finds out on its own that ICS is the sign-in server and runs the sign-in:
 
 1. Your browser opens the ICS sign-in. Sign in if needed.
