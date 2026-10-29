@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- `ics_asset_outline` always asks ICS, so an outline is not served from the session cache after
+  access to the document was taken away. The cache only resolves `anchor` for a read ICS checks anyway.
 - A server built for stdio is never served over HTTP with its stored tokens: `build_http_app` refuses
   it, and a tool call arriving over HTTP without bearer auth answers `auth_required` instead of using
   the local credentials.

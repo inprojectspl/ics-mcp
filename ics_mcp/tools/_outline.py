@@ -9,7 +9,7 @@ from typing import Any
 
 from fastmcp import Context
 
-from ics_mcp._helpers import cached_outline, store_outline
+from ics_mcp._helpers import store_outline
 from ics_mcp._payload import fit_count, payload_chars
 from ics_mcp._runtime import runtime
 from ics_mcp.config import get_settings
@@ -214,13 +214,11 @@ def heading_lines(outline: dict[str, Any], anchor: str, path: str | None) -> tup
 async def load_outline(
     ctx: Context, slug: str, *, wait: bool = False, edges: bool = False
 ) -> dict[str, Any]:
-    """The ICS outline, with compact edges only when asked for. Only the
-    outline without edges is cached: edges change without a new version."""
+    """The ICS outline, with compact edges only when asked for. Always asked
+    of ICS, so a revoked access is not answered from memory; the outline
+    without edges is kept to resolve anchors (edges change without a new
+    version)."""
     cacheable = not edges
-    if cacheable and not wait:
-        hit = cached_outline(ctx, slug)
-        if hit is not None:
-            return hit
     params: dict[str, str] = {"shape": "compact", "edges": str(edges).lower()}
     if wait:
         params["wait"] = "true"

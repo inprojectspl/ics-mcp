@@ -234,10 +234,11 @@ async def test_outline_edges_on_request_in_compact_shape(real_client, respx_mock
     full = await call_tool(mcp, "ics_asset_outline", {"slug_or_id": "spec-v1", "edges": True})
     assert full["edges"] == EDGES["edges"]
     assert full["nodes"]["architecture"] == {"title": "Architecture"}
-    # Edges are fetched only on request; the outline without them is cached.
+    # Edges are fetched only on request.
     assert [c.request.url.params["edges"] for c in route.calls] == ["false", "true"]
+    # The outline tool always asks ICS, so a revoked access is not served from memory.
     await call_tool(mcp, "ics_asset_outline", {"slug_or_id": "spec-v1"})
-    assert route.call_count == 2
+    assert route.call_count == 3
 
 
 @pytest.mark.asyncio
@@ -396,3 +397,21 @@ async def test_collection_with_one_oversized_file_still_moves_forward(
     assert payload_chars(first) <= cap
     assert [f["path"] for f in second["files"]] == ["small.md"]
     assert "trimmed" not in second
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_outline_after_lost_access_is_not_served_from_memory(
+    real_client, respx_mock, make_mcp
+):
+    respx_mock.get(f"{ICS}/api/assets/by-slug/abc/outline").mock(
+        side_effect=[
+            httpx.Response(200, json=outline()),
+            httpx.Response(404, json={"code": "asset_not_found", "detail": "asset not found"}),
+        ]
+    )
+    mcp = make_mcp(discovery)
+    assert (await call_tool(mcp, "ics_asset_outline", {"slug_or_id": "abc"}))["summary"]
+    with pytest.raises(ToolError) as exc:
+        await call_tool(mcp, "ics_asset_outline", {"slug_or_id": "abc"})
+    assert json.loads(str(exc.value))["code"] == "asset_not_found"

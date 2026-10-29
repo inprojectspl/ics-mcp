@@ -9,7 +9,13 @@ from fastmcp.utilities.json_schema import compress_schema
 from pydantic import Field
 
 from ics_mcp import models as M
-from ics_mcp._helpers import map_ics_errors, parse_asset_ref, resolve_id, resolve_slug
+from ics_mcp._helpers import (
+    cached_outline,
+    map_ics_errors,
+    parse_asset_ref,
+    resolve_id,
+    resolve_slug,
+)
 from ics_mcp._payload import fit_count, maybe_truncate
 from ics_mcp._runtime import runtime
 from ics_mcp.errors import ICSError
@@ -217,7 +223,9 @@ async def _section(
             hint="Anchors come from the outline of the current version; pass only one of them.",
             field="anchor",
         )
-    start, end = heading_lines(await load_outline(ctx, slug), anchor, path)
+    # A cached outline is enough here: ICS checks the read that follows.
+    outline = cached_outline(ctx, slug) or await load_outline(ctx, slug)
+    start, end = heading_lines(outline, anchor, path)
     span = end - start + 1
     if span > _DEFAULT_LINE_LIMIT and not max_lines:
         max_lines = min(span, _MAX_LINE_LIMIT)
