@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- `ICS_MCP_MAX_UPLOAD_BYTES` and `ICS_MCP_MAX_UPLOAD_FILES` apply to every write: `ics_asset_create_html`
+  and the single-content tools (`ics_asset_create_md`, `ics_asset_update_content`, `ics_asset_add_file`)
+  now refuse an oversized upload with `payload_too_large` before sending anything to ICS.
 - `ics_asset_outline` always asks ICS, so an outline is not served from the session cache after
   access to the document was taken away. The cache only resolves `anchor` for a read ICS checks anyway.
 - A server built for stdio is never served over HTTP with its stored tokens: `build_http_app` refuses
