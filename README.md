@@ -27,6 +27,7 @@ sharing team documents.
 [Configuration](#configuration) ·
 [Tools](#tools) ·
 [HTTP mode](#http-mode) ·
+[ChatGPT](docs/guide/chatgpt.md) ·
 [Security](#security-model) ·
 [Development](#development)
 
@@ -61,6 +62,9 @@ sharing team documents.
 The [user guide](https://inprojectspl.github.io/ics-mcp/) explains, for people who use ICS through an assistant,
 how to connect a client and sign in, what to ask for everyday tasks, how confirmations work and
 how to fix common errors. This README is the reference for tools and configuration.
+
+For ChatGPT, follow [Connect ChatGPT to ICS](docs/guide/chatgpt.md): it covers remote HTTP,
+OAuth discovery, Google Workspace sign-in, permission checks and the current file-upload limits.
 
 ## Quick start
 
@@ -211,6 +215,15 @@ uvx --from git+https://github.com/inprojectspl/ics-mcp ics-mcp
 Run it behind a TLS-terminating reverse proxy that does not buffer `text/event-stream`.
 [`deploy/`](./deploy) has a Dockerfile, a compose snippet, an example Caddyfile and a
 [deployment guide](./deploy/README.md).
+
+For a custom ChatGPT connection, see the [ChatGPT guide](docs/guide/chatgpt.md). Before connecting,
+check the public discovery routes without signing in or calling any tools:
+
+```bash
+uv run python scripts/check_remote.py \
+  --mcp-url https://mcp.ics.example.com/mcp \
+  --issuer https://ics.example.com
+```
 
 ## Tools
 
