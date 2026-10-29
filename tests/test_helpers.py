@@ -407,25 +407,28 @@ async def test_upload_files_html_files_with_base64():
 
 
 # ============================================================
-#  resolve_html_file_for_json
+#  html_file_for_json
 # ============================================================
 
 
-def test_resolve_html_file_for_json_text_passthrough():
-    from ics_mcp._uploads import resolve_html_file_for_json
+def _as_json(f):
+    from ics_mcp._uploads import html_file_for_json, read_capped
 
+    ((_, raw),) = read_capped([f])
+    return html_file_for_json(f, raw)
+
+
+def test_html_file_for_json_text_passthrough():
     f = _StubHtmlFile(path="index.html", content_text="<html/>", mime="text/html")
-    out = resolve_html_file_for_json(f)
+    out = _as_json(f)
     assert out == {"path": "index.html", "mime": "text/html", "content_text": "<html/>"}
 
 
-def test_resolve_html_file_for_json_from_path_text(tmp_path):
-    from ics_mcp._uploads import resolve_html_file_for_json
-
+def test_html_file_for_json_from_path_text(tmp_path):
     p = tmp_path / "x.html"
     p.write_text("<h1>from disk</h1>", encoding="utf-8")
     f = _StubHtmlFile(path="index.html", content_path=str(p), mime="text/html")
-    out = resolve_html_file_for_json(f)
+    out = _as_json(f)
     assert out["content_text"] == "<h1>from disk</h1>"
     assert "content_path" not in out
     assert "content_base64" not in out
@@ -496,13 +499,11 @@ def test_createmdin_validator_accepts_content():
     CreateMdIn(title="t", content="x")
 
 
-def test_resolve_html_file_for_json_from_path_binary(tmp_path):
-    from ics_mcp._uploads import resolve_html_file_for_json
-
+def test_html_file_for_json_from_path_binary(tmp_path):
     p = tmp_path / "img.png"
     p.write_bytes(b"\x89PNG\r\n\x1a\n\x00\x01\x02")
     f = _StubHtmlFile(path="img.png", content_path=str(p), mime="image/png")
-    out = resolve_html_file_for_json(f)
+    out = _as_json(f)
     assert "content_text" not in out
     assert "content_base64" in out
     import base64 as b64

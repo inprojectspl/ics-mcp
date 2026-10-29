@@ -806,3 +806,34 @@ async def test_404_from_ics_surfaces_as_tool_error(real_client, respx_mock, make
         await call_tool(mcp, "ics_asset_meta", {"slug_or_id": "missing"})
     err = json.loads(str(exc.value))
     assert err["code"] == "not_found"
+
+
+@pytest.mark.parametrize(
+    ("module", "tool", "endpoint", "payload"),
+    [
+        (
+            write_html,
+            "ics_asset_create_html",
+            "/api/assets/html-json",
+            {
+                "title": "T",
+                "entry_path": "index.html",
+                "files": [{"path": "index.html", "content_text": "<html>" + "x" * 100}],
+            },
+        ),
+        (write_md, "ics_asset_create_md", "/api/assets", {"title": "T", "content": "x" * 100}),
+    ],
+)
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_an_upload_over_the_cap_never_reaches_ics(
+    real_client, respx_mock, make_mcp, monkeypatch, module, tool, endpoint, payload
+):
+    from ics_mcp.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "mcp_max_upload_bytes", 8)
+    route = respx_mock.post(f"{ICS}{endpoint}")
+    with pytest.raises(ToolError) as exc:
+        await call_tool(make_mcp(module), tool, {"payload": payload})
+    assert "payload_too_large" in str(exc.value)
+    assert not route.called

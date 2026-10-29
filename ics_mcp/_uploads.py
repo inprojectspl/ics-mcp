@@ -3,7 +3,7 @@ with the upload size and count caps."""
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterator
 from typing import Any, NoReturn, cast
 
 from fastmcp import Context
@@ -52,10 +52,14 @@ def file_bytes(
             )
         )
     if content_text is not None:
-        return content_text.encode("utf-8")
-    if content_base64 is not None:
-        return base64.b64decode(content_base64 or "")
-    return _read_local_path(content_path or "")
+        raw = content_text.encode("utf-8")
+    elif content_base64 is not None:
+        raw = base64.b64decode(content_base64 or "")
+    else:
+        return _read_local_path(content_path or "")  # checked with stat() before reading
+    if len(raw) > get_settings().mcp_max_upload_bytes:
+        too_large("The content")
+    return raw
 
 
 def too_large(what: str) -> NoReturn:
@@ -112,6 +116,26 @@ def _read_local_path(path: str) -> bytes:
         )
 
 
+def read_capped(files: list[Any]) -> Iterator[tuple[Any, bytes]]:
+    """Each file with its bytes, enforcing the file-count and total-size caps
+    before anything is sent: every multi-file upload goes through here."""
+    settings = get_settings()
+    if len(files) > settings.mcp_max_upload_files:
+        raise_tool_error(
+            ICSError(
+                "payload_too_large",
+                f"{len(files)} files exceed the limit of {settings.mcp_max_upload_files}.",
+            )
+        )
+    total = 0
+    for f in files:
+        raw = _file_raw(f)
+        total += len(raw)
+        if total > settings.mcp_max_upload_bytes:
+            too_large("The upload")
+        yield f, raw
+
+
 async def upload_files[R](
     ctx: Context,
     files: list[Any],
@@ -123,23 +147,10 @@ async def upload_files[R](
     """Read `files`, then call `send(multipart, paths)`, reporting progress
     over both steps: one tick per file read and a final one once ICS has
     answered. Enforces the file-count and total-size caps before sending."""
-    settings = get_settings()
-    if len(files) > settings.mcp_max_upload_files:
-        raise_tool_error(
-            ICSError(
-                "payload_too_large",
-                f"{len(files)} files exceed the limit of {settings.mcp_max_upload_files}.",
-            )
-        )
     async with progress_scope(ctx, total=len(files) + 1, message=message) as tick:
         mp: list[Any] = []
         paths: list[str] = []
-        total = 0
-        for f in files:
-            raw = _file_raw(f)
-            total += len(raw)
-            if total > settings.mcp_max_upload_bytes:
-                too_large("The upload")
+        for f, raw in read_capped(files):
             mp.append(("files", (f.path.split("/")[-1], raw, _file_mime(f, default_mime))))
             paths.append(f.path)
             await tick(1, f"+{f.path}")
@@ -172,10 +183,9 @@ def _file_mime(f: Any, default: str) -> str:
     return getattr(f, "mime", None) or default
 
 
-def resolve_html_file_for_json(f: Any) -> dict[str, Any]:
-    """`HtmlFile` as the dict `/api/assets/html-json` accepts: a `content_path` file
-    is sent as `content_text` when it decodes as UTF-8, else as `content_base64`."""
-    raw = _file_raw(f)
+def html_file_for_json(f: Any, raw: bytes) -> dict[str, Any]:
+    """`HtmlFile` with its bytes as the dict `/api/assets/html-json` accepts:
+    sent as `content_text` when it decodes as UTF-8, else as `content_base64`."""
     out: dict[str, Any] = {"path": f.path}
     if f.mime is not None:
         out["mime"] = f.mime

@@ -17,7 +17,7 @@ from ics_mcp._helpers import (
     resolve_slug,
 )
 from ics_mcp._runtime import runtime
-from ics_mcp._uploads import resolve_html_file_for_json, upload_files
+from ics_mcp._uploads import html_file_for_json, read_capped, upload_files
 from ics_mcp.progress import progress_scope
 from ics_mcp.tools._annotations import DESTRUCTIVE, MUTATING, RO_IDEMP
 from ics_mcp.tools._metadata import METADATA_HINTS, create_metadata_fields
@@ -55,8 +55,8 @@ def register(mcp: FastMCP) -> None:
         files = payload.files
         async with progress_scope(ctx, total=len(files) + 1, message="Upload HTML") as tick:
             encoded = []
-            for f in files:
-                encoded.append(resolve_html_file_for_json(f))
+            for f, raw in read_capped(files):
+                encoded.append(html_file_for_json(f, raw))
                 await tick(1, f"+{f.path}")
             body = {
                 "title": payload.title,

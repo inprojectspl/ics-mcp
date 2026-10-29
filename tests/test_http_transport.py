@@ -11,6 +11,7 @@ from fastmcp.server.dependencies import AccessToken
 
 from ics_mcp.auth.token_store import TokenStore
 from ics_mcp.config import Settings
+from ics_mcp.errors import ICSError
 from ics_mcp.http_app import build_http_app
 from ics_mcp.ics_client import ICSClient
 from ics_mcp.server import build_mcp
@@ -150,3 +151,24 @@ def test_internal_base_url_keeps_the_public_issuer():
     )
     assert s.issuer == "https://ics.test"
     assert s.jwks_url == "http://backend:8000/api/auth/oauth/jwks.json"
+
+
+def test_http_app_refuses_a_server_built_for_stdio():
+    stdio = Settings(base_url=ICS, mcp_resource_uri=RESOURCE, mcp_transport="stdio")
+    with pytest.raises(RuntimeError, match="ICS_MCP_TRANSPORT=http"):
+        build_http_app(build_mcp(stdio), stdio)
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_stdio_tokens_never_answer_an_http_request(real_client, respx_mock, monkeypatch):
+    """A stdio server exposed by another HTTP runner has no bearer gate; its
+    stored tokens must not act for the anonymous caller."""
+    from tests.conftest import ICS as STDIO_ICS
+
+    route = respx_mock.get(f"{STDIO_ICS}/api/x").mock(return_value=httpx.Response(200, json={}))
+    monkeypatch.setattr("ics_mcp.ics_client.get_http_request", lambda: object())
+    with pytest.raises(ICSError) as exc:
+        await real_client.get_json("/api/x")
+    assert exc.value.code == "auth_required"
+    assert not route.called
