@@ -106,7 +106,11 @@ def register(mcp: FastMCP) -> None:
             "a click sends a magic link to the e-mail. "
             '**Requires**: `allowed_emails=["a@b.com", ...]`.\n\n'
             "Optional for all modes: `expires_at` (RFC3339, "
-            "e.g. `2026-12-31T23:59:00Z`), `max_views` (int).\n\n"
+            "e.g. `2026-12-31T23:59:00Z`), `max_views` (int).\n"
+            "Micro-application: `app_roles` (preferred) and/or `app_permissions` "
+            "(at least one required there) name what link holders may do in the "
+            "app, from ics_microapp_access; the link opens the app itself, each "
+            "visitor with an anonymous identity of their own.\n\n"
             "When not to use: for a single user with lasting access "
             "(not a link) use `ics_share_grant_user`: it grants the "
             "editor/viewer role without a token."
@@ -122,6 +126,8 @@ def register(mcp: FastMCP) -> None:
         allowed_emails: list[str] | None = None,
         expires_at: str | None = None,
         max_views: int | None = None,
+        app_roles: list[str] | None = None,
+        app_permissions: list[str] | None = None,
         confirm: M.ConfirmFlag = None,
     ) -> dict[str, Any]:
         if mode == "public":
@@ -146,6 +152,10 @@ def register(mcp: FastMCP) -> None:
             body["expires_at"] = expires_at
         if max_views:
             body["max_views"] = max_views
+        if app_roles:
+            body["app_roles"] = app_roles
+        if app_permissions:
+            body["app_permissions"] = app_permissions
         return await runtime.require_ics().post_json(f"/api/assets/{asset_id}/shares", body)
 
     @mcp.tool(

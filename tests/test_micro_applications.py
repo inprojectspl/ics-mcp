@@ -247,3 +247,26 @@ async def test_list_files_of_a_micro_application_needs_publish_rights(
     with pytest.raises(ToolError) as exc:
         await call_tool(make_mcp(discovery), "ics_asset_list_files", {"slug_or_id": "app"})
     assert "publish_permission_required" in str(exc.value)
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=True)
+async def test_share_link_of_a_micro_application_carries_app_permissions(
+    real_client, respx_mock, make_mcp
+):
+    from ics_mcp.tools import share
+    from tests.conftest import mock_resolve
+
+    mock_resolve(respx_mock)
+    route = respx_mock.post(f"{ICS}/api/assets/{ASSET_ID}/shares").mock(
+        return_value=httpx.Response(
+            201,
+            json={"id": "s1", "token": "t", "mode": "org_sso", "app_permissions": ["game.play"]},
+        )
+    )
+    await call_tool(
+        make_mcp(share),
+        "ics_share_create_link",
+        {"slug_or_id": "abc", "mode": "org_sso", "app_permissions": ["game.play"]},
+    )
+    assert json.loads(route.calls[0].request.content)["app_permissions"] == ["game.play"]
