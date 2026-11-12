@@ -287,6 +287,34 @@ image?)._", and the response tells the assistant the OCR state.
 
 Your ICS administrator may have turned OCR off; the assistant is told when that is the case.
 
+## Micro-applications
+
+### Build an app and give people roles
+
+> "Make a small request register for the team: employees file requests, reviewers approve them."
+
+The assistant checks that the idea fits (`ics_help('micro-applications')`), writes the package
+from the contract (`ics_microapp_contract`), plans it (`ics_microapp_plan`) and publishes it
+(`ics_microapp_apply`). Before publishing it tells you what the release changes for the people
+using the app (`app_changes`). Then it gives people the app's roles with `ics_microapp_access_set`:
+an ICS role on the asset only opens the app, it gives nothing inside it.
+
+### Read an app with its current data
+
+> "What is waiting for approval in the request register?"
+
+`ics_asset_read` returns the app as you see it: its own view with the records filled in (each
+request with its state, each idea with its comments), then roles, data model and raw records.
+
+### Compare releases
+
+> "What changed in the register since the last release?"
+
+For the people who publish the app, `ics_asset_versions` lists its releases with their state and
+`ics_asset_diff` compares two: the changed files and what changed in the app (a role gained a
+permission, a collection got a field). In the ICS web app the same is under *Versions* in the
+document menu.
+
 ## The relation graph
 
 ICS records typed relations between documents, such as "this design was derived from those

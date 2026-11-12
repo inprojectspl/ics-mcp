@@ -53,6 +53,26 @@ def fit_count(total: int, build: Callable[[int], dict[str, Any]], cap: int | Non
     return lo
 
 
+_LIST_HINT = "Cut to the response limit; the omitted entries come last in ICS order."
+
+
+def fit_list(data: dict[str, Any], key: str) -> dict[str, Any]:
+    """Keep the first entries of `data[key]` that fit the response limit; the
+    rest of `data` stays whole."""
+    if len(repr(data)) <= get_settings().mcp_response_max_chars:
+        # Cheap upper bound: most answers fit without measuring each cut.
+        return data
+    items: list[Any] = data.get(key) or []
+
+    def build(k: int) -> dict[str, Any]:
+        out = {**data, key: items[:k]}
+        if k < len(items):
+            out.update(truncated=True, omitted=len(items) - k, hint=_LIST_HINT)
+        return out
+
+    return build(fit_count(len(items), build))
+
+
 def maybe_truncate(
     payload: dict[str, Any], *, max_chars: int | None = None, hint: str | None = None
 ) -> dict[str, Any]:

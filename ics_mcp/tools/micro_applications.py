@@ -11,13 +11,13 @@ from __future__ import annotations
 import base64
 import json
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 from fastmcp import Context, FastMCP
 from pydantic import Field
 
 from ics_mcp import models as M
-from ics_mcp._helpers import guarded, map_ics_errors, resolve_id
+from ics_mcp._helpers import guarded, map_ics_errors, resolve_id, resolve_id_cached
 from ics_mcp._payload import payload_chars
 from ics_mcp._runtime import runtime
 from ics_mcp._uploads import file_bytes, too_large
@@ -188,9 +188,10 @@ def register(mcp: FastMCP) -> None:
             "running app. New app: omit `asset_id` (optional `project_id`); next release: "
             "`asset_id`. Give `files` (path + one of content_text / content_base64 / "
             "content_path) or `package_dir` (stdio). Returns `plan_id`, `release_digest`, "
-            "`expected_generation`, changes, migration and effective limits; errors come as "
+            "`expected_generation`, `app_changes` (roles, permissions, endpoints, data), "
+            "migration and effective limits; errors come as "
             "`manifest_invalid` with `diagnostics` (file, pointer, code). A changed file "
-            "needs a new plan."
+            "needs a new plan; `change_note` says in a sentence what the release changes."
         ),
         annotations=MUTATING,
     )
@@ -200,6 +201,13 @@ def register(mcp: FastMCP) -> None:
         package_dir: str | None = None,
         asset_id: str | None = None,
         project_id: str | None = None,
+        change_note: Annotated[
+            str | None,
+            Field(
+                max_length=500,
+                description="What the release changes, in a sentence: the version history note.",
+            ),
+        ] = None,
     ) -> dict[str, Any]:
         if (files is None) == (package_dir is None):
             raise_tool_error(
@@ -215,6 +223,8 @@ def register(mcp: FastMCP) -> None:
             body["asset_id"] = await _asset_id(asset_id)
         if project_id:
             body["project_id"] = _uuid_or_error(project_id, "project_id")
+        if change_note:
+            body["change_note"] = change_note
         result = await runtime.require_ics().post_json(f"{_BASE}/plans", body)
         result["next"] = (
             "ics_microapp_apply(plan_id, digest=release_digest, expected_generation, "
@@ -287,6 +297,7 @@ def register(mcp: FastMCP) -> None:
         items = [
             {
                 "asset_id": i["asset_id"],
+                "slug": i.get("slug"),
                 "title": i["title"],
                 "desired_state": i["desired_state"],
                 "runtime": i["runtime"]["state"],
@@ -395,4 +406,57 @@ async def author_package_read(slug: str, path: str | None, version: int | None) 
         out.update({"content_base64": data["content"], "encoding": "base64"})
     else:
         out["content"] = data["content"]
+    return out
+
+
+async def fetch_document(asset_id: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    """The app as a document, as the caller sees it, without the HTML an
+    agent does not use; shared by `ics_asset_read` and the asset resource."""
+    return cast(
+        dict[str, Any],
+        await runtime.require_ics().get_json(
+            f"{_BASE}/{asset_id}/document", params={**(params or {}), "html": "false"}
+        ),
+    )
+
+
+async def document_read(
+    ctx: Context,
+    slug: str,
+    path: str | None,
+    cursor: str | None,
+    *,
+    lines: str | None = None,
+    max_lines: int | None = None,
+) -> dict[str, Any]:
+    """`ics_asset_read` of a micro-application itself, as Markdown: the app's
+    own view first (its content with the records filled in, run as the
+    caller), then state, roles, permissions, model and raw records. ICS
+    slices `lines` like a file read."""
+    asset_id = await resolve_id_cached(ctx, slug)
+    params: dict[str, Any] = {}
+    if path:
+        params["collection"] = path.removeprefix("data/").strip("/")
+    if cursor:
+        params["cursor"] = cursor
+    if lines:
+        params["lines"] = lines
+    if max_lines:
+        params["max_lines"] = max_lines
+    data = await fetch_document(asset_id, params)
+    out: dict[str, Any] = {
+        "slug": data.get("slug", slug),
+        "path": path or "app.md",
+        "format": "markdown",
+        "content": data["markdown"],
+        "current_version": data.get("version"),
+        "total_lines": data.get("total_lines"),
+        "returned_range": data.get("returned_range"),
+        "next_cursors": {
+            c["name"]: c["next_cursor"] for c in data.get("collections", []) if c.get("next_cursor")
+        }
+        or None,
+        # Which endpoint rendered the view, and why it is missing if it is.
+        "app_view": data.get("app_view"),
+    }
     return out

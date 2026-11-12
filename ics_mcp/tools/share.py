@@ -193,7 +193,9 @@ def register(mcp: FastMCP) -> None:
             "matched by e-mail; when there is no ICS account yet, ICS creates an invited "
             "account and sends an invitation e-mail.\n\n"
             "When not to use: for many recipients / access without an account / "
-            "a link to paste into Slack, use `ics_share_create_link`."
+            "a link to paste into Slack, use `ics_share_create_link`. A "
+            "micro-application: the role only opens it; what the person does in it "
+            "comes from its roles (`ics_microapp_access_set`)."
         ),
         annotations=MUTATING_OPEN_WORLD,
     )

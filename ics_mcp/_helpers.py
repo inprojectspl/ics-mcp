@@ -127,24 +127,35 @@ def slug_from(value: str) -> str:
     return ref.slug if ref else value
 
 
+async def _meta_by_id(asset_id: str) -> dict[str, Any]:
+    """The asset meta by id for any viewer (`/api/assets/{id}` answers
+    editors only), the same shape as `/by-slug/{slug}/meta`."""
+    ics = runtime.require_ics()
+    try:
+        return cast(dict[str, Any], await ics.get_json(f"/api/assets/by-id/{asset_id}/meta"))
+    except ICSError as e:
+        # An ICS without the route answers a bare 404, not `asset_not_found`.
+        if e.status != 404 or e.code == "asset_not_found":
+            raise
+        return cast(dict[str, Any], await ics.get_json(f"/api/assets/{asset_id}"))
+
+
 async def resolve_slug(slug_or_id: str) -> str:
     """Path-safe slug from a slug, a UUID identifier or an `ics://` reference."""
     slug_or_id = slug_from(slug_or_id)
     if not _is_uuid(slug_or_id):
         return slug_or_id
-    meta = await runtime.require_ics().get_json(f"/api/assets/{slug_or_id}")
-    return cast(str, meta["slug"])
+    return cast(str, (await _meta_by_id(slug_or_id))["slug"])
 
 
 async def resolve_id(slug_or_id: str) -> tuple[str, dict[str, Any]]:
     """`(asset_id, meta)` in one uncached ICS round-trip, for callers that need
     fresh meta; tools that only need the id use `resolve_id_cached`."""
     slug_or_id = slug_from(slug_or_id)
-    ics = runtime.require_ics()
     if _is_uuid(slug_or_id):
-        meta = await ics.get_json(f"/api/assets/{slug_or_id}")
+        meta = await _meta_by_id(slug_or_id)
     else:
-        meta = await ics.get_json(f"/api/assets/by-slug/{slug_or_id}/meta")
+        meta = await runtime.require_ics().get_json(f"/api/assets/by-slug/{slug_or_id}/meta")
     return meta["id"], meta
 
 
@@ -184,6 +195,27 @@ def store_outline(ctx: Context, slug: str, outline: dict[str, Any]) -> None:
 def drop_none(**values: Any) -> dict[str, Any]:
     """Query params or a JSON body without the arguments left at `None`."""
     return {k: v for k, v in values.items() if v is not None}
+
+
+# Hints every tool gives for these codes; a tool's own `hints=` win. A
+# micro-application reaches generic tools (outline, rendered read, share
+# links, writes) that cannot serve it, so the agent learns the right tool.
+COMMON_HINTS: Mapping[str, str] = {
+    "microapp_source_restricted": (
+        "This is a micro-application: read it whole with ics_asset_read(slug_or_id) "
+        "(its own view with the records, then roles, model and data); it has no "
+        "outline, anchors or rendered HTML. Its package files are for publishers: "
+        "ics_asset_read(slug_or_id, path='microapp.json')."
+    ),
+    "microapp_requires_agent_api": (
+        "A micro-application changes only through ics_microapp_plan + ics_microapp_apply "
+        "(ics_help('micro-applications'))."
+    ),
+    "microapp_not_addressable": (
+        "Link a micro-application as a whole: drop target_path and target_anchor. "
+        "Its links are not extracted, so there is nothing to rescan."
+    ),
+}
 
 
 def promote_error(e: ICSError, hints: Mapping[str, str]) -> ICSError:
@@ -227,7 +259,7 @@ def _map_ics_errors(  # noqa: UP047 - PEP 695 syntax doesn't accept ParamSpec ye
         except ToolError:
             raise
         except ICSError as e:
-            err(promote_error(e, hints) if hints is not None else e)
+            err(promote_error(e, {**COMMON_HINTS, **(hints or {})}))
         except UnicodeDecodeError:
             err(
                 ICSError(

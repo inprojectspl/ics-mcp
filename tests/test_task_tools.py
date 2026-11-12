@@ -69,7 +69,7 @@ def pack(documents: list[dict[str, Any]], **overrides: Any) -> dict[str, Any]:
 
 def mock_meta(respx_mock, asset_id: str = ASSET_ID) -> None:
     """The meta a UUID argument resolves to; the results name the document by it."""
-    respx_mock.get(f"{ICS}/api/assets/{asset_id}").mock(
+    respx_mock.get(f"{ICS}/api/assets/by-id/{asset_id}/meta").mock(
         return_value=httpx.Response(200, json={"id": asset_id, "slug": "spec", "title": "Spec"})
     )
 

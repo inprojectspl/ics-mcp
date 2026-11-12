@@ -35,6 +35,7 @@ _REPLACE_TOOL = {
     "html_bundle": "ics_asset_html_replace_bundle",
     "pdf_doc": "ics_asset_replace_document",
     "office_doc": "ics_asset_replace_document",
+    "micro_application": "ics_microapp_plan + ics_microapp_apply",
 }
 
 

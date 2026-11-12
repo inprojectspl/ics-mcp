@@ -107,21 +107,38 @@ async def test_resolve_slug_passes_through_slug_without_fetch(fake_ics):
 
 @pytest.mark.asyncio
 async def test_resolve_slug_fetches_when_uuid_given(fake_ics):
-    fake_ics.get_json.return_value = {
-        "slug": "resolved-slug",
-        "id": "12345678-1234-5678-1234-567812345678",
-    }
-    out = await resolve_slug("12345678-1234-5678-1234-567812345678")
+    uid = "12345678-1234-5678-1234-567812345678"
+    fake_ics.get_json.return_value = {"slug": "resolved-slug", "id": uid}
+    out = await resolve_slug(uid)
     assert out == "resolved-slug"
-    fake_ics.get_json.assert_awaited_once_with("/api/assets/12345678-1234-5678-1234-567812345678")
+    # The viewer-level route: people who only read an asset resolve its id too.
+    fake_ics.get_json.assert_awaited_once_with(f"/api/assets/by-id/{uid}/meta")
 
 
 @pytest.mark.asyncio
-async def test_resolve_id_with_uuid_hits_legacy_endpoint(fake_ics):
-    fake_ics.get_json.return_value = {"id": "12345678-1234-5678-1234-567812345678", "slug": "s"}
-    asset_id, meta = await resolve_id("12345678-1234-5678-1234-567812345678")
-    assert asset_id == "12345678-1234-5678-1234-567812345678"
-    assert meta["slug"] == "s"
+async def test_resolve_slug_falls_back_only_on_an_ics_without_the_route(fake_ics):
+    from ics_mcp.errors import ICSError
+
+    uid = "12345678-1234-5678-1234-567812345678"
+    no_route = ICSError("not_found", "Not Found", status=404)
+    fake_ics.get_json.side_effect = [no_route, {"slug": "old-ics"}]
+    assert await resolve_slug(uid) == "old-ics"
+    assert fake_ics.get_json.await_args.args == (f"/api/assets/{uid}",)
+    # A real "not found" from the route is the answer, without a second call.
+    fake_ics.get_json.reset_mock()
+    fake_ics.get_json.side_effect = [ICSError("asset_not_found", "x", status=404)]
+    with pytest.raises(ICSError) as e:
+        await resolve_slug(uid)
+    assert e.value.code == "asset_not_found" and fake_ics.get_json.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_resolve_id_with_uuid_reads_the_viewer_meta(fake_ics):
+    uid = "12345678-1234-5678-1234-567812345678"
+    fake_ics.get_json.return_value = {"id": uid, "slug": "s"}
+    asset_id, meta = await resolve_id(uid)
+    assert asset_id == uid and meta["slug"] == "s"
+    fake_ics.get_json.assert_awaited_once_with(f"/api/assets/by-id/{uid}/meta")
 
 
 @pytest.mark.asyncio

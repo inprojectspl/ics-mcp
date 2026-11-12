@@ -19,7 +19,7 @@ practice that covers:
 | Relations | Show which documents a document was derived from, depends on or replaces; record such a relation. |
 | Tasks | Gather the documents that belong to an OpenProject work package or a Project Standard task in one call. |
 
-ICS stores five kinds of documents, and the assistant works with all of them:
+ICS stores six kinds of documents, and the assistant works with all of them:
 
 | Kind | What it is |
 |---|---|
@@ -28,6 +28,7 @@ ICS stores five kinds of documents, and the assistant works with all of them:
 | `html_bundle` | Generated HTML with its CSS, scripts and images, for example a dashboard or a report. |
 | `pdf_doc` | One PDF. ICS extracts its text, and scanned pages get text through OCR. |
 | `office_doc` | One Word or ODF text document (`.docx`, `.odt`, `.doc`), converted to Markdown. |
+| `micro_application` | A small app people use that keeps its own data, such as a request register or a booking sheet. The assistant builds and publishes it, gives people its roles and reads it with its current records. |
 
 ## How the assistant acts as you
 

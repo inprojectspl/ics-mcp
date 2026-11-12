@@ -271,7 +271,7 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | `ics_assets_list(kind?, project_id?, pinned?, shared_with_me?, owned?, tag?, doc_type?, freshness?, updated_since?, touched_since?, q?, limit?, cursor?)` | Paginated list with filters, 20 per page by default and cut to the response limit. Compact items carry the summary preview, document type, freshness, maintainer, successor and estimated tokens. `updated_since` means a content change, `touched_since` any change. The cheapest first step. |
 | `ics_assets_search(q, kind?, project_id?, doc_type?, tag?, freshness?, limit?, offset?, detail?, match?)` | Full-text search in Markdown, PDF text and converted Word/ODF documents. All words by default, accent-insensitive prefixes and quoted phrases; `match="any"` broadens. Continue with `next_offset`. `detail="full"` returns ids, scores and highlights. |
 | `ics_asset_meta(slug_or_id)` | Metadata only, with the full summary. |
-| `ics_asset_list_files(slug_or_id, version?)` | Files of a collection or bundle, optionally of an older version. |
+| `ics_asset_list_files(slug_or_id, version?)` | Files of a collection or bundle, optionally of an older version; a micro-application's package (publishers only). |
 | `ics_asset_outline(slug_or_id, wait?, edges?, max_level?, offset?)` | Structure (headings with `line`, `end_line` and `anchor`, files, wikilink graph) without content; outgoing relations with `edges=true`. |
 | `ics_projects_list()` | Projects visible to the user. |
 | `ics_shares_list(slug_or_id)` | Share links and user grants of a document. |
@@ -293,7 +293,7 @@ reads from disk (stdio only), which keeps large files out of the model's context
 
 | Tool | Purpose |
 |---|---|
-| `ics_asset_read(slug_or_id, path?, anchor?, lines?, encoding?, format?, max_lines?, version?)` | File content: a line range, one section by heading `anchor` (`ics://asset/<slug>#<anchor>` works too) or an older version. A PDF reads as Markdown with one `## Page N` section per page, a Word/ODF document as its converted Markdown. |
+| `ics_asset_read(slug_or_id, path?, anchor?, lines?, encoding?, format?, max_lines?, version?, cursor?)` | File content: a line range, one section by heading `anchor` (`ics://asset/<slug>#<anchor>` works too) or an older version. A PDF reads as Markdown with one `## Page N` section per page, a Word/ODF document as its converted Markdown, a micro-application as its own view with the records, then its data (`path='data/<collection>'` + `cursor` for more). |
 | `ics_asset_ocr(slug_or_id, request?)` | OCR state of a scanned PDF (queued, running, done, failed); `request=True` queues OCR of the current version or retries it. |
 | `ics_asset_read_rendered(slug_or_id, version?)` | Rendered HTML. Expensive; prefer `ics_asset_read`. |
 | `ics_asset_versions(slug_or_id)` | Version history with authors. |
@@ -337,7 +337,7 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | Tool | Purpose |
 |---|---|
 | `ics_doc_types()` | Document types for `doc_type`: key, label, agent hint, default review interval. |
-| `ics_asset_set_meta(slug_or_id, summary?, doc_type?, maintainer_email?, review_due_at?, language?, properties?)` | Change metadata without a new version; `""` clears a field. |
+| `ics_asset_set_meta(slug_or_id, summary?, doc_type?, maintainer_email?, review_due_at?, language?, properties?, project_id?)` | Change metadata without a new version, or move the asset to a project; `""` clears a field. |
 
 **Relation graph**
 
@@ -372,8 +372,8 @@ reads from disk (stdio only), which keeps large files out of the model's context
 
 | Tool | Purpose |
 |---|---|
-| `ics_share_create_link(slug_or_id, mode, password?, allowed_emails?, expires_at?, max_views?, confirm?)` | Create a link: `org_sso`, `password`, `public` or `magic_email`. `public` needs confirmation. |
-| `ics_share_grant_user(slug_or_id, email, role)` | Grant a user `editor` or `viewer` access. |
+| `ics_share_create_link(slug_or_id, mode, password?, allowed_emails?, expires_at?, max_views?, app_roles?, app_permissions?, confirm?)` | Create a link: `org_sso`, `password`, `public` or `magic_email`. `public` needs confirmation. A micro-application link names the app roles it gives. |
+| `ics_share_grant_user(slug_or_id, email, role)` | Grant a user `editor` or `viewer` access. For a micro-application this only opens it; give app roles with `ics_microapp_access_set`. |
 | `ics_share_revoke(share_id? \| slug_or_id + user_id, confirm?)` | Disable a share link or revoke a user grant permanently. Destructive. |
 
 </details>

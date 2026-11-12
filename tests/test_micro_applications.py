@@ -157,6 +157,7 @@ async def test_apply_conflict_keeps_the_ics_code(real_client, respx_mock, make_m
 async def test_status_list_is_compact(real_client, respx_mock, make_mcp):
     item = {
         "asset_id": ASSET_ID,
+        "slug": "app1",
         "title": "App",
         "desired_state": "enabled",
         "runtime": {"state": "sleeping", "x": "y" * 500},
@@ -171,6 +172,7 @@ async def test_status_list_is_compact(real_client, respx_mock, make_mcp):
     assert out["items"] == [
         {
             "asset_id": ASSET_ID,
+            "slug": "app1",
             "title": "App",
             "desired_state": "enabled",
             "runtime": "sleeping",
@@ -303,6 +305,7 @@ async def test_access_set_sends_exact_permissions_and_opens_for_a_person(
     sent = json.loads(put.calls.last.request.content)
     # Duplicates collapse; a person with permissions may open the app.
     assert sent == {
+        "roles": [],
         "permissions": ["requests.read"],
         "can_open": True,
         "user_email": "bob@example.com",
@@ -316,6 +319,47 @@ def test_access_confirmation_names_the_viewer_share_it_adds():
 
     text = _describe(asset_id="a1", user_email="bob@x", permissions=["r.read"], can_open=None)
     assert "may open the app" in text and "exactly r.read" in text
+    text = _describe(asset_id="a1", user_email="bob@x", roles=["reviewer"], can_open=None)
+    assert "exactly role reviewer; may open the app" in text
+    text = _describe(asset_id="a1", project_id="p1")
+    assert text == "project p1 in a1: exactly nothing"
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=True)
+async def test_access_set_gives_a_role_and_a_link_carries_roles(real_client, respx_mock, make_mcp):
+    from ics_mcp.tools import micro_app_access, share
+    from tests.conftest import mock_resolve
+
+    put = respx_mock.put(f"{BASE}/{ASSET_ID}/access").mock(
+        return_value=httpx.Response(200, json={"roles_added": ["reviewer"], "open_change": None})
+    )
+    await call_tool(
+        make_mcp(micro_app_access),
+        "ics_microapp_access_set",
+        {"asset_id": ASSET_ID, "project_id": "p1", "roles": ["reviewer"], "confirm": True},
+    )
+    # A project is not "opened" by this call: only a person gets a viewer share.
+    assert json.loads(put.calls.last.request.content) == {
+        "roles": ["reviewer"],
+        "permissions": [],
+        "can_open": None,
+        "project_id": "p1",
+    }
+
+    mock_resolve(respx_mock)
+    link = respx_mock.post(f"{ICS}/api/assets/{ASSET_ID}/shares").mock(
+        return_value=httpx.Response(201, json={"id": "s1", "app_roles": ["reviewer"]})
+    )
+    await call_tool(
+        make_mcp(share),
+        "ics_share_create_link",
+        {"slug_or_id": "abc", "mode": "org_sso", "app_roles": ["reviewer"]},
+    )
+    assert json.loads(link.calls[0].request.content) == {
+        "mode": "org_sso",
+        "app_roles": ["reviewer"],
+    }
 
 
 @pytest.mark.asyncio
@@ -329,3 +373,101 @@ async def test_access_set_needs_exactly_one_principal(real_client, make_mcp):
             "ics_microapp_access_set",
             {"asset_id": ASSET_ID, "permissions": [], "confirm": True},
         )
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=True)
+async def test_reading_an_app_returns_its_document_and_pages_by_collection(
+    real_client, respx_mock, make_mcp
+):
+    respx_mock.get(f"{ICS}/api/assets/by-slug/app1/file-mcp").mock(
+        return_value=httpx.Response(403, json={"code": "microapp_source_restricted", "detail": "x"})
+    )
+    respx_mock.get(f"{ICS}/api/assets/by-slug/app1/meta").mock(
+        return_value=httpx.Response(200, json=asset_meta(slug="app1", kind="micro_application"))
+    )
+    doc = respx_mock.get(f"{BASE}/{ASSET_ID}/document").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "markdown": "# App\n\n## App view\n",
+                "html": "<h1>App</h1>",
+                "collections": [{"name": "requests", "readable": True, "next_cursor": "c2"}],
+                "app_view": {"endpoint": "document", "error": None},
+            },
+        )
+    )
+    mcp = make_mcp(read)
+    out = await call_tool(mcp, "ics_asset_read", {"slug_or_id": "app1"})
+    assert out["content"] == "# App\n\n## App view\n" and out["next_cursors"] == {"requests": "c2"}
+    assert out["app_view"] == {"endpoint": "document", "error": None}
+    assert out["path"] == "app.md" and out["format"] == "markdown"
+    await call_tool(
+        mcp, "ics_asset_read", {"slug_or_id": "app1", "path": "data/requests", "cursor": "c2"}
+    )
+    assert doc.calls.last.request.url.params["collection"] == "requests"
+    assert doc.calls.last.request.url.params["cursor"] == "c2"
+    # ICS slices the document like a file read; the agent never gets HTML.
+    doc.mock(
+        return_value=httpx.Response(
+            200, json={"markdown": "# App", "total_lines": 4, "returned_range": [1, 2]}
+        )
+    )
+    head = await call_tool(mcp, "ics_asset_read", {"slug_or_id": "app1", "max_lines": 2})
+    sent = doc.calls.last.request.url.params
+    assert sent["lines"] == "1-2" and sent["max_lines"] == "2" and sent["html"] == "false"
+    assert head["truncated"] is True and head["returned_range"] == [1, 2]
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_generic_tools_point_an_agent_at_the_app_read(real_client, respx_mock, make_mcp):
+    respx_mock.get(f"{ICS}/api/assets/by-slug/app1/outline").mock(
+        return_value=httpx.Response(403, json={"code": "microapp_source_restricted", "detail": "x"})
+    )
+    with pytest.raises(ToolError) as exc:
+        await call_tool(make_mcp(discovery), "ics_asset_outline", {"slug_or_id": "app1"})
+    assert "ics_asset_read(slug_or_id)" in str(exc.value)
+
+    respx_mock.get(f"{ICS}/api/assets/by-slug/app1/file-mcp").mock(
+        return_value=httpx.Response(403, json={"code": "microapp_source_restricted", "detail": "x"})
+    )
+    with pytest.raises(ToolError) as exc:
+        await call_tool(make_mcp(read), "ics_asset_read", {"slug_or_id": "app1", "version": 2})
+    # An archived app has only its package: no silent read of the current one.
+    assert "invalid_argument" in str(exc.value) and "path=" in str(exc.value)
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_a_long_app_comparison_keeps_what_changed_in_the_app(
+    real_client, respx_mock, make_mcp, monkeypatch
+):
+    monkeypatch.setattr(get_settings(), "mcp_response_max_chars", 1500)
+    respx_mock.get(f"{ICS}/api/assets/by-slug/app1/meta").mock(
+        return_value=httpx.Response(200, json=asset_meta(slug="app1", kind="micro_application"))
+    )
+    files = [{"path": f"public/f{i}.js", "change": "modified"} for i in range(200)]
+    change = {"area": "role", "name": "reviewer", "change": "changed", "detail": "+x"}
+    respx_mock.get(f"{ICS}/api/assets/{ASSET_ID}/versions/1/diff/2").mock(
+        return_value=httpx.Response(200, json={"files": files, "app_changes": [change]})
+    )
+    out = await call_tool(
+        make_mcp(read), "ics_asset_diff", {"slug_or_id": "app1", "v1": 1, "v2": 2}
+    )
+    assert out["app_changes"] == [change] and out["truncated"] is True and out["omitted"] > 0
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=True)
+async def test_a_plan_carries_the_release_note(real_client, respx_mock, make_mcp):
+    route = respx_mock.post(f"{BASE}/plans").mock(
+        return_value=httpx.Response(201, json={"plan_id": "plan_x", "app_changes": []})
+    )
+    files = [{"path": "microapp.json", "content_text": "{}"}]
+    await call_tool(
+        make_mcp(micro_applications),
+        "ics_microapp_plan",
+        {"files": files, "change_note": "Reviewers export"},
+    )
+    assert json.loads(route.calls.last.request.content)["change_note"] == "Reviewers export"

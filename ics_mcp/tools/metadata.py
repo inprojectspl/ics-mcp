@@ -45,9 +45,12 @@ def register(mcp: FastMCP) -> None:
         name="ics_asset_set_meta",
         title="Set document metadata",
         description=(
-            "Sets the summary, document type, maintainer, review date, language or "
-            "properties of an asset without a new version. Only the given fields "
-            "change. See `ics_help('tools')`."
+            "Sets the summary, document type, maintainer, review date, language, "
+            "properties or project of an asset of any kind (micro-applications too) "
+            "without a new version. Only the given fields change. `project_id` "
+            "(from `ics_projects_list`) moves the asset into that project, '' takes it "
+            "out; it needs ownership of the asset and editor rights in the project. "
+            "See `ics_help('tools')`."
         ),
         annotations=MUTATING_IDEMP,
     )
@@ -74,6 +77,10 @@ def register(mcp: FastMCP) -> None:
             dict[str, Any] | None,
             Field(description="Type-specific fields; replaces the whole object."),
         ] = None,
+        project_id: Annotated[
+            str | None,
+            Field(description="Project UUID to move the asset into; '' takes it out."),
+        ] = None,
     ) -> dict[str, Any]:
         asset_id, meta = await resolve_id(slug_or_id)
         body: dict[str, Any] = {}
@@ -93,13 +100,23 @@ def register(mcp: FastMCP) -> None:
             )
         if properties is not None:
             body["properties"] = properties
-        if not body:
+        if not body and project_id is None:
             raise ICSError(
                 "invalid_argument",
                 "Nothing to change: pass at least one metadata field.",
-                hint="For example `summary=...` or `doc_type=...`.",
+                hint="For example `summary=...`, `doc_type=...` or `project_id=...`.",
             )
-        return await runtime.require_ics().patch_json(f"/api/assets/{asset_id}/meta", body)
+        ics = runtime.require_ics()
+        out: dict[str, Any] = (
+            await ics.patch_json(f"/api/assets/{asset_id}/meta", body)
+            if body
+            else {"slug": meta["slug"]}
+        )
+        if project_id is not None:
+            out["project"] = await ics.patch_json(
+                f"/api/assets/by-slug/{meta['slug']}/project", {"project_id": project_id or None}
+            )
+        return out
 
     @mcp.tool(
         name="ics_doc_types",
