@@ -7,6 +7,7 @@ from fastmcp import FastMCP
 from ics_mcp.tools import (
     discovery,
     metadata,
+    micro_app_access,
     micro_applications,
     ocr,
     read,
@@ -37,5 +38,6 @@ def register_all(mcp: FastMCP) -> None:
     tasks.register(mcp)
     share.register(mcp)
     micro_applications.register(mcp)
+    micro_app_access.register(mcp)
     mcp.add_transform(CompactCatalog())
     mcp.add_middleware(ArgumentErrors())

@@ -26,6 +26,10 @@ for relevance order and snippets. All query words are required by default;
 | An MD vault with `[[wikilink]]` links | `ics_asset_create_collection` |
 | An HTML bundle (page with CSS/JS) | `ics_asset_create_html` |
 | A PDF or Word/ODF document (.pdf, .docx, .odt, .doc) from the user's disk | `ics_asset_create_document(file_path=...)` |
+| An app people use that keeps its own data (register, bookings, poll, game) | `ics_microapp_contract` → `ics_microapp_plan` → `ics_microapp_apply` (`ics_help('micro-applications')`) |
+
+**Rule**: HTML bundle = a page to look at; micro-application = a tool to
+work in, with records, permissions and many users.
 
 ## Updating an existing asset
 
@@ -60,6 +64,10 @@ Many files at once = `new_version`. Do not push N separate
 | A link for an email allowlist + magic link | `ics_share_create_link(mode="magic_email", allowed_emails=[...])` |
 | Lasting access for 1 known user | `ics_share_grant_user(email=..., role=...)` |
 | The user pasted a `https://.../s/<token>` link | `ics_share_resolve(share_link=...)` (+ `password` when protected) |
+| Let a colleague use a micro-application | `ics_microapp_access_set(asset_id, user_email=..., roles=[...])` |
+| Let a whole project use a micro-application | `ics_microapp_access_set(asset_id, project_id=..., roles=[...])` |
+| Who can do what in a micro-application | `ics_microapp_access(asset_id)` |
+| A micro-application for people without an account | `ics_share_create_link(mode="public", app_roles=[...])` |
 
 **Rule**: a token link = "paste it somewhere". A per-user grant = "user X
 should see it in their UI permanently".

@@ -1,4 +1,4 @@
-"""Micro-applications: six thin adapters over the ICS management API.
+"""Micro-applications: thin adapters over the ICS management API.
 
 ICS validates, stores, migrates and activates; this server only sends
 requests through the existing ICSClient (OAuth bearer of the user). A plan

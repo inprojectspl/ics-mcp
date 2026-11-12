@@ -27,7 +27,10 @@ INSTRUCTIONS = (
     "Multi-file uploads (create_collection, create_html, new_version, html_replace_bundle) "
     "report progress: one step per file and a final one after ICS responds. "
     "PDF and Word/ODF files are uploaded from a local path with "
-    "`ics_asset_create_document` and read as Markdown with `ics_asset_read`."
+    "`ics_asset_create_document` and read as Markdown with `ics_asset_read`. "
+    "An app people use and that keeps data (register, bookings, poll, game) is a "
+    "micro-application: `ics_help('micro-applications')`, then `ics_microapp_contract`; "
+    "people get one of the app's roles with `ics_microapp_access_set`, never through the panel."
 )
 
 PROTOCOL_VERSION = __protocol_version__

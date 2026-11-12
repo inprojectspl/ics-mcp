@@ -20,7 +20,7 @@ sharing team documents.
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white)](./pyproject.toml)
 [![MCP 2025-11-25](https://img.shields.io/badge/MCP-2025--11--25-ff5500?style=flat-square)](https://modelcontextprotocol.io/specification/2025-11-25)
 [![FastMCP 3](https://img.shields.io/badge/FastMCP-3.x-111827?style=flat-square)](https://gofastmcp.com)
-[![59 tools](https://img.shields.io/badge/tools-59-059669?style=flat-square)](#tools)
+[![61 tools](https://img.shields.io/badge/tools-61-059669?style=flat-square)](#tools)
 
 [User guide](https://inprojectspl.github.io/ics-mcp/) ·
 [Quick start](#quick-start) ·
@@ -46,7 +46,7 @@ sharing team documents.
 - **Acts as you, never more.** Every tool call is a request to the ICS user-level API with the
   signed-in user's OAuth token. No shared service account and no administration tools; an
   administrator's token still carries that administrator's access.
-- **59 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
+- **61 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
   Word documents, versions, sharing, the relation graph and task context.
 - **Safe destructive operations.** Deletes and overwrites go through a confirmation gate:
   interactive elicitation, scripted `yolo` (only when the operator allows it) or `dry_run`.
@@ -227,7 +227,7 @@ uv run python scripts/check_remote.py \
 
 ## Tools
 
-59 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
+61 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
 `idempotentHint`, `openWorldHint`) and returns structured content. Documents are addressed by
 `slug_or_id` (a slug or a UUID), except `ics_asset_undelete`, which needs the UUID.
 `ics_help` returns longer guides to the assistant.
@@ -245,7 +245,7 @@ uv run python scripts/check_remote.py \
 | Tasks | `ics_task_context`, `ics_task_link`, `ics_task_unlink`, `ics_asset_external_refs`, `ics_project_links`, `ics_project_links_set` |
 | Versions | `ics_asset_new_version`, `ics_asset_restore_version` |
 | Sharing | `ics_share_create_link`, `ics_share_grant_user`, `ics_share_revoke` |
-| Micro-applications | `ics_microapp_contract`, `ics_microapp_plan`, `ics_microapp_apply`, `ics_microapp_status`, `ics_microapp_control`, `ics_microapp_logs` |
+| Micro-applications | `ics_microapp_contract`, `ics_microapp_plan`, `ics_microapp_apply`, `ics_microapp_status`, `ics_microapp_control`, `ics_microapp_logs`, `ics_microapp_access`, `ics_microapp_access_set` |
 
 Tools that take file content accept inline content or `content_path`, a local path the server
 reads from disk (stdio only), which keeps large files out of the model's context.
@@ -286,6 +286,8 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | `ics_microapp_status(asset_id? \| operation_id?, q?, state?, offset?, limit?)` | Operation progress, app state (desired state, runtime, release, data) or the list; never wakes an app. |
 | `ics_microapp_control(asset_id, action, expected_generation, idempotency_key?, confirm?)` | `enable`, `suspend`, `sleep`, `restart`; no data is deleted. Needs `app.control`. |
 | `ics_microapp_logs(asset_id, cursor?, limit?)` | Redacted application, publication and control logs. |
+| `ics_microapp_access(asset_id)` | The app's roles, every permission of the active release with its label and what it unlocks, who can open the app in which roles. Needs `app.access.manage`. |
+| `ics_microapp_access_set(asset_id, roles?, permissions?, user_email? \| project_id?, can_open?, confirm?)` | Sets exactly these roles (and single permissions) for a person or project and lets the person open the app, in one idempotent call. |
 
 **Read**
 

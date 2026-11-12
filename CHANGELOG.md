@@ -27,7 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in sections with one `contract_hash`), `ics_microapp_plan` (checks a complete package and binds it
   to a digest), `ics_microapp_apply` (idempotent, returns a durable `operation_id`),
   `ics_microapp_status`, `ics_microapp_control` (enable, suspend, sleep, restart) and
-  `ics_microapp_logs`, plus the `micro-applications` help topic. `ics_asset_read` and
+  `ics_microapp_logs`, `ics_microapp_access` (the app's roles, what each permission unlocks, who
+  has what) and `ics_microapp_access_set` (exactly these roles and permissions plus opening the
+  app, in one idempotent call), plus the `micro-applications` help topic. `ics_share_create_link`
+  takes `app_roles` and `app_permissions`. `ics_asset_read` and
   `ics_asset_list_files` show a micro-application's package through the ICS author route, which
   only publishers may open. Needs ICS with micro-applications enabled.
 - A ChatGPT connection guide covering remote MCP, OAuth discovery, Google Workspace sign-in,

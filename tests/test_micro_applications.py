@@ -270,3 +270,62 @@ async def test_share_link_of_a_micro_application_carries_app_permissions(
         {"slug_or_id": "abc", "mode": "org_sso", "app_permissions": ["game.play"]},
     )
     assert json.loads(route.calls[0].request.content)["app_permissions"] == ["game.play"]
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=True)
+async def test_access_set_sends_exact_permissions_and_opens_for_a_person(
+    real_client, respx_mock, make_mcp
+):
+    from ics_mcp.tools import micro_app_access
+
+    put = respx_mock.put(f"{BASE}/{ASSET_ID}/access").mock(
+        return_value=httpx.Response(
+            200,
+            json={"added": ["requests.read"], "removed": [], "open_change": "viewer_share_added"},
+        )
+    )
+    respx_mock.get(f"{BASE}/{ASSET_ID}/access").mock(
+        return_value=httpx.Response(200, json={"permissions": [], "people": [], "projects": []})
+    )
+    mcp = make_mcp(micro_app_access)
+    out = await call_tool(
+        mcp,
+        "ics_microapp_access_set",
+        {
+            "asset_id": ASSET_ID,
+            "user_email": "bob@example.com",
+            "permissions": ["requests.read", "requests.read"],
+            "confirm": True,
+        },
+    )
+    assert out["open_change"] == "viewer_share_added"
+    sent = json.loads(put.calls.last.request.content)
+    # Duplicates collapse; a person with permissions may open the app.
+    assert sent == {
+        "permissions": ["requests.read"],
+        "can_open": True,
+        "user_email": "bob@example.com",
+    }
+    view = await call_tool(mcp, "ics_microapp_access", {"asset_id": ASSET_ID})
+    assert view["people"] == []
+
+
+def test_access_confirmation_names_the_viewer_share_it_adds():
+    from ics_mcp.tools.micro_app_access import _describe
+
+    text = _describe(asset_id="a1", user_email="bob@x", permissions=["r.read"], can_open=None)
+    assert "may open the app" in text and "exactly r.read" in text
+
+
+@pytest.mark.asyncio
+async def test_access_set_needs_exactly_one_principal(real_client, make_mcp):
+    from ics_mcp.tools import micro_app_access
+
+    mcp = make_mcp(micro_app_access)
+    with pytest.raises(ToolError, match="exactly one of user_email or project_id"):
+        await call_tool(
+            mcp,
+            "ics_microapp_access_set",
+            {"asset_id": ASSET_ID, "permissions": [], "confirm": True},
+        )

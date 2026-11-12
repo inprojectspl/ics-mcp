@@ -279,4 +279,6 @@ cache them.
 - `ics_microapp_status(asset_id | operation_id | list filters)`: read-only state.
 - `ics_microapp_control(asset_id, action, expected_generation)`: enable, suspend, sleep, restart.
 - `ics_microapp_logs(asset_id, cursor?)`: redacted logs.
+- `ics_microapp_access(asset_id)`: what each permission unlocks, who can open the app and with what.
+- `ics_microapp_access_set(asset_id, user_email | project_id, permissions, can_open?)`: set exactly these permissions (and opening) in one idempotent call.
 See `ics_help('micro-applications')`.
