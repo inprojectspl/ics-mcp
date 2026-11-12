@@ -17,6 +17,7 @@ from ics_mcp._payload import fit_count, maybe_truncate
 from ics_mcp._runtime import runtime
 from ics_mcp.errors import ICSError
 from ics_mcp.models import AssetKind
+from ics_mcp.tools import micro_applications
 from ics_mcp.tools._annotations import RO_IDEMP
 from ics_mcp.tools._args import VersionArg
 from ics_mcp.tools._outline import load_outline, shape_outline
@@ -215,9 +216,14 @@ def register(mcp: FastMCP) -> None:
     async def ics_asset_list_files(slug_or_id: str, version: VersionArg = None) -> dict[str, Any]:
         slug = await resolve_slug(slug_or_id)
         params = {"version": version} if version else None
-        data = await runtime.require_ics().get_json(
-            f"/api/assets/by-slug/{slug}/files-mcp", params=params
-        )
+        try:
+            data = await runtime.require_ics().get_json(
+                f"/api/assets/by-slug/{slug}/files-mcp", params=params
+            )
+        except ICSError as e:
+            if e.code != micro_applications.SOURCE_RESTRICTED:
+                raise
+            data = await micro_applications.author_package_files(slug, version)
         return maybe_truncate(M.AssetFilesOut(**data).model_dump(mode="json"))
 
     @mcp.tool(

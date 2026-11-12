@@ -53,7 +53,10 @@ Primary stack:
   re-exported from `ics_mcp.models`
 - `ics_mcp/_helpers.py`: error mapping, slug/id resolution, confirm guard;
   `_payload.py` response size caps; `_uploads.py` upload file contents
-- `ics_mcp/tools/`: MCP tools grouped by domain
+- `ics_mcp/tools/`: MCP tools grouped by domain; `micro_applications.py` holds
+  the six `ics_microapp_*` adapters (contract, plan, apply, status, control,
+  logs) over the ICS `/api/micro-applications` API, with argument models in
+  `ics_mcp/models/micro_applications.py`
 - `ics_mcp/resources.py`: MCP resources
 - `ics_mcp/prompts.py`: MCP prompts
 - `ics_mcp/auth/`: OAuth, token storage, JWT verification, refresh flow

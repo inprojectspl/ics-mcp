@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Micro-applications (ICS `ics.microapp/v1alpha1`, PoC): `ics_microapp_contract` (the build standard
+  in sections with one `contract_hash`), `ics_microapp_plan` (checks a complete package and binds it
+  to a digest), `ics_microapp_apply` (idempotent, returns a durable `operation_id`),
+  `ics_microapp_status`, `ics_microapp_control` (enable, suspend, sleep, restart) and
+  `ics_microapp_logs`, plus the `micro-applications` help topic. `ics_asset_read` and
+  `ics_asset_list_files` show a micro-application's package through the ICS author route, which
+  only publishers may open. Needs ICS with micro-applications enabled.
 - A ChatGPT connection guide covering remote MCP, OAuth discovery, Google Workspace sign-in,
   confirmations and HTTP file-upload limits. `scripts/check_remote.py` checks the public metadata
   and health routes with anonymous GET requests and reports configuration/routing failures.

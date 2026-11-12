@@ -19,6 +19,7 @@ from ics_mcp._helpers import (
 from ics_mcp._payload import fit_count, maybe_truncate
 from ics_mcp._runtime import runtime
 from ics_mcp.errors import ICSError
+from ics_mcp.tools import micro_applications
 from ics_mcp.tools._annotations import RO_IDEMP
 from ics_mcp.tools._args import VersionArg
 from ics_mcp.tools._freshness import successor_notice
@@ -104,9 +105,15 @@ def register(mcp: FastMCP) -> None:
                 params["lines"] = f"1-{max_lines}"
         if version:
             params["version"] = version
-        data = await runtime.require_ics().get_json(
-            f"/api/assets/by-slug/{slug}/file-mcp", params=params
-        )
+        try:
+            data = await runtime.require_ics().get_json(
+                f"/api/assets/by-slug/{slug}/file-mcp", params=params
+            )
+        except ICSError as e:
+            if e.code != micro_applications.SOURCE_RESTRICTED:
+                raise
+            # Micro-application packages are readable only on the author route.
+            return await micro_applications.author_package_read(slug, path, version)
         notice = successor_notice(
             data.get("freshness"), data.get("superseded_by"), data.get("latest")
         )

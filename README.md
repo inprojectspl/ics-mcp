@@ -20,7 +20,7 @@ sharing team documents.
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white)](./pyproject.toml)
 [![MCP 2025-11-25](https://img.shields.io/badge/MCP-2025--11--25-ff5500?style=flat-square)](https://modelcontextprotocol.io/specification/2025-11-25)
 [![FastMCP 3](https://img.shields.io/badge/FastMCP-3.x-111827?style=flat-square)](https://gofastmcp.com)
-[![53 tools](https://img.shields.io/badge/tools-53-059669?style=flat-square)](#tools)
+[![59 tools](https://img.shields.io/badge/tools-59-059669?style=flat-square)](#tools)
 
 [User guide](https://inprojectspl.github.io/ics-mcp/) ·
 [Quick start](#quick-start) ·
@@ -46,7 +46,7 @@ sharing team documents.
 - **Acts as you, never more.** Every tool call is a request to the ICS user-level API with the
   signed-in user's OAuth token. No shared service account and no administration tools; an
   administrator's token still carries that administrator's access.
-- **53 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
+- **59 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
   Word documents, versions, sharing, the relation graph and task context.
 - **Safe destructive operations.** Deletes and overwrites go through a confirmation gate:
   interactive elicitation, scripted `yolo` (only when the operator allows it) or `dry_run`.
@@ -227,7 +227,7 @@ uv run python scripts/check_remote.py \
 
 ## Tools
 
-53 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
+59 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
 `idempotentHint`, `openWorldHint`) and returns structured content. Documents are addressed by
 `slug_or_id` (a slug or a UUID), except `ics_asset_undelete`, which needs the UUID.
 `ics_help` returns longer guides to the assistant.
@@ -245,6 +245,7 @@ uv run python scripts/check_remote.py \
 | Tasks | `ics_task_context`, `ics_task_link`, `ics_task_unlink`, `ics_asset_external_refs`, `ics_project_links`, `ics_project_links_set` |
 | Versions | `ics_asset_new_version`, `ics_asset_restore_version` |
 | Sharing | `ics_share_create_link`, `ics_share_grant_user`, `ics_share_revoke` |
+| Micro-applications | `ics_microapp_contract`, `ics_microapp_plan`, `ics_microapp_apply`, `ics_microapp_status`, `ics_microapp_control`, `ics_microapp_logs` |
 
 Tools that take file content accept inline content or `content_path`, a local path the server
 reads from disk (stdio only), which keeps large files out of the model's context.
@@ -258,7 +259,7 @@ reads from disk (stdio only), which keeps large files out of the model's context
 
 | Tool | Purpose |
 |---|---|
-| `ics_help(topic?)` | Guides: `overview`, `workflows`, `tools`, `tool-selection`, `confirm`, `auth`, `graph`, `task-context`. |
+| `ics_help(topic?)` | Guides: `overview`, `workflows`, `tools`, `tool-selection`, `confirm`, `auth`, `graph`, `task-context`, `micro-applications`. |
 | `ics_whoami()` | The signed-in user, scope and client. |
 | `ics_session_set_mode(mode)` | Confirm mode for this session: `interactive`, `yolo`, `dry_run`. |
 | `ics_session_status()` | Current mode, server and protocol versions. |
@@ -274,6 +275,17 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | `ics_asset_outline(slug_or_id, wait?, edges?, max_level?, offset?)` | Structure (headings with `line`, `end_line` and `anchor`, files, wikilink graph) without content; outgoing relations with `edges=true`. |
 | `ics_projects_list()` | Projects visible to the user. |
 | `ics_shares_list(slug_or_id)` | Share links and user grants of a document. |
+
+**Micro-applications** (ICS `ics.microapp/v1alpha1`, needs ICS with micro-applications enabled)
+
+| Tool | Purpose |
+|---|---|
+| `ics_microapp_contract(section?, part?)` | The build standard: manifest JSON Schema, handler SDK types, browser SDK, a working template, limits, errors, management API; large sections come in parts under one `contract_hash`. |
+| `ics_microapp_plan(files? \| package_dir?, asset_id?, project_id?)` | Checks a complete package and binds it to a digest without changing the running app; diagnostics name file, pointer and code. |
+| `ics_microapp_apply(plan_id, digest, expected_generation, idempotency_key?, confirm?)` | Publishes exactly the planned package and returns a durable `operation_id`; the same key returns the same operation. Needs `app.publish`. |
+| `ics_microapp_status(asset_id? \| operation_id?, q?, state?, offset?, limit?)` | Operation progress, app state (desired state, runtime, release, data) or the list; never wakes an app. |
+| `ics_microapp_control(asset_id, action, expected_generation, idempotency_key?, confirm?)` | `enable`, `suspend`, `sleep`, `restart`; no data is deleted. Needs `app.control`. |
+| `ics_microapp_logs(asset_id, cursor?, limit?)` | Redacted application, publication and control logs. |
 
 **Read**
 

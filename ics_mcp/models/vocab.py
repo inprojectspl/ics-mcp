@@ -10,7 +10,9 @@ from pydantic import AfterValidator, Field
 
 from ics_mcp.config import ConfirmMode
 
-type AssetKind = Literal["md_single", "md_collection", "html_bundle", "pdf_doc", "office_doc"]
+type AssetKind = Literal[
+    "md_single", "md_collection", "html_bundle", "pdf_doc", "office_doc", "micro_application"
+]
 #: Format ICS detected from the content of an `office_doc` upload.
 type OfficeSourceFormat = Literal["docx", "odt", "doc"]
 type ShareMode = Literal["org_sso", "password", "public", "magic_email"]

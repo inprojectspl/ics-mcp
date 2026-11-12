@@ -270,3 +270,13 @@ cache them.
   for a collection/bundle its file list (the outline describes only the current version).
 - `ics://asset/{slug}@v{version}/file/{path}`: a file from an archived version.
 - `ics://project/{slug}`: project metadata + the first 200 assets.
+
+## Micro-applications
+
+- `ics_microapp_contract(section?, part?)`: the build standard, in sections.
+- `ics_microapp_plan(files | package_dir, asset_id?, project_id?)`: check and bind a package.
+- `ics_microapp_apply(plan_id, digest, expected_generation, idempotency_key?)`: publish; durable `operation_id`.
+- `ics_microapp_status(asset_id | operation_id | list filters)`: read-only state.
+- `ics_microapp_control(asset_id, action, expected_generation)`: enable, suspend, sleep, restart.
+- `ics_microapp_logs(asset_id, cursor?)`: redacted logs.
+See `ics_help('micro-applications')`.
