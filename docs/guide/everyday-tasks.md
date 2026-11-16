@@ -160,12 +160,30 @@ set with `ics_asset_html_replace_bundle`; editing single files of a bundle is no
 | "Tag it `architecture` and `draft`" | `ics_asset_set_tags` (replaces the whole tag list, at most 20 tags) |
 | "Pin it" / "Unpin it" | `ics_asset_pin` |
 | "Set the summary, make Anna the maintainer, review it in three months" | `ics_asset_set_meta` |
+| "Move it to the Operations project" | `ics_asset_set_meta` with `project_id` |
 
 `ics_asset_set_meta` changes metadata without creating a new version: summary, document type,
 maintainer, review date, language and type-specific properties. The maintainer must be you or
 someone the document is already shared with; otherwise it fails with `maintainer_unknown`, and
 the fix is to share the document with that person first. Setting a document type without a
 review date schedules the review using the type's default interval.
+
+### Retry a write safely
+
+> "Publish the new report, and if the connection drops, make sure it is not published twice."
+
+Two optional arguments make writes safe to repeat:
+
+- **`expected_version`** on tools that create a new version: the write goes through only if the
+  document is still at that version. If someone published in the meantime, ICS answers
+  `version_conflict` and nothing is overwritten; the assistant reads the new version and decides
+  again.
+- **`publication`** (`{id, order_id, role}`, kept by you or your automation) on
+  `ics_asset_create_html` and the tools that replace a whole document. ICS stores the result
+  under that key, so the same call returns the original document and version instead of a
+  second one. After a timeout the outcome is reported as unknown with the key;
+  `ics_publication_get` reads what happened. The assistant never invents a key and never
+  repeats such a write on its own after a network failure.
 
 ### Delete and restore
 
@@ -298,6 +316,26 @@ from the contract (`ics_microapp_contract`), plans it (`ics_microapp_plan`) and 
 (`ics_microapp_apply`). Before publishing it tells you what the release changes for the people
 using the app (`app_changes`). Then it gives people the app's roles with `ics_microapp_access_set`:
 an ICS role on the asset only opens the app, it gives nothing inside it.
+
+### Hand an app out
+
+> "Give Priya the employee role and make a public link where people can only file requests."
+
+`ics_microapp_access_set` sets exactly the roles a person (or every member of a project) has and
+lets them open the app, in one call that asks for confirmation. `ics_microapp_access` shows the
+app's roles and what each permission unlocks. For people without an account,
+`ics_share_create_link` takes `app_roles` (or single `app_permissions`): a `public` link opens
+the app without sign-in, the other modes keep their gate. `ics_share_grant_user` alone only lets
+a person open the app.
+
+### Run an app and read its logs
+
+> "The register is stuck, restart it" or "Suspend the poll, voting is over."
+
+`ics_microapp_status` shows the state, the active release, the data size and the last
+publication; it never wakes the app. `ics_microapp_control` enables, suspends, puts to sleep or
+restarts it (with confirmation); none of these deletes data. `ics_microapp_logs` reads recent
+log lines of the app and its publications, with secrets removed.
 
 ### Read an app with its current data
 
