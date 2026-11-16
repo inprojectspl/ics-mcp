@@ -5,7 +5,7 @@ can do in ICS what you can do, and nothing more.
 
 ## What the assistant can do
 
-The assistant gets 53 tools (all listed in the [tool reference](https://github.com/inprojectspl/ics-mcp/blob/main/README.md#tools)). In
+The assistant gets 62 tools (all listed in the [tool reference](https://github.com/inprojectspl/ics-mcp/blob/main/README.md#tools)). In
 practice that covers:
 
 | Area | Examples of what you can ask |

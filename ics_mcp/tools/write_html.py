@@ -16,6 +16,7 @@ from ics_mcp._helpers import (
     resolve_id,
     resolve_slug,
 )
+from ics_mcp._publication import publication_project, publish, require_expected_version
 from ics_mcp._runtime import runtime
 from ics_mcp._uploads import html_file_for_json, read_capped, upload_files
 from ics_mcp.progress import progress_scope
@@ -38,10 +39,12 @@ def register(mcp: FastMCP) -> None:
             "- `content_text`: short inline text (for snippets under a few KB).\n"
             "- `content_base64`: inline binary (when there is no file on disk).\n\n"
             '`share_mode="public"` follows the session mode and `confirm` '
-            "(dry_run previews it)."
+            "(dry_run previews it). Optional `publication` is a caller-persisted identity. "
+            "Confirmation includes the backend receipt and its version; an unknown outcome "
+            "must be read with ics_publication_get using the same identity, without a new key."
         ),
         annotations=MUTATING,
-        output_schema=output_or_preview(M.HtmlBundleOut),
+        output_schema=output_or_preview(M.HtmlPublicationOut),
     )
     @map_ics_errors(hints=METADATA_HINTS)
     async def ics_asset_create_html(
@@ -58,7 +61,7 @@ def register(mcp: FastMCP) -> None:
             for f, raw in read_capped(files):
                 encoded.append(html_file_for_json(f, raw))
                 await tick(1, f"+{f.path}")
-            body = {
+            body: dict[str, Any] = {
                 "title": payload.title,
                 "entry_path": payload.entry_path,
                 "share_mode": payload.share_mode,
@@ -67,9 +70,15 @@ def register(mcp: FastMCP) -> None:
                 "files": encoded,
                 **create_metadata_fields(payload.doc_type, payload.summary),
             }
-            result = await runtime.require_ics().post_json("/api/assets/html-json", body)
+            if payload.publication is not None:
+                body["publication"] = payload.publication.model_dump()
+            result = await publish(
+                lambda: runtime.require_ics().post_json("/api/assets/html-json", body),
+                payload.publication,
+                str(payload.project_id) if payload.project_id is not None else None,
+            )
             await tick(1, "uploaded")
-        return M.HtmlBundleOut(**result)
+        return M.HtmlPublicationOut(**result) if payload.publication else M.HtmlBundleOut(**result)
 
     @mcp.tool(
         name="ics_asset_html_replace_bundle",
@@ -80,7 +89,11 @@ def register(mcp: FastMCP) -> None:
             "per-file update/add (security model: a bundle is an atomic deploy). "
             "Reversible via `ics_asset_restore_version`.\n\n"
             "Each file: exactly one of `content_path` (recommended over a few KB), "
-            "`content_text` or `content_base64`."
+            "`content_text` or `content_base64`. "
+            "Optional `expected_version` rejects stale writes with `version_conflict`. "
+            "Caller-persisted `publication` requires expected_version and confirms the stored "
+            "receipt. After an unknown outcome use ics_publication_get with the same key "
+            "and original project scope; gateway failures never trigger mutation retries."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -92,14 +105,27 @@ def register(mcp: FastMCP) -> None:
         entry_path: str,
         files: list[M.HtmlFile],
         confirm: M.ConfirmFlag = None,
+        expected_version: M.ExpectedVersionArg = None,
+        publication: M.PublicationIn | None = None,
     ) -> dict[str, Any]:
-        asset_id, _ = await resolve_id(slug_or_id)
+        require_expected_version(publication, expected_version)
+        asset_id, meta = await resolve_id(slug_or_id)
+        project_id = await publication_project(publication, meta)
 
         async def send(mp: list[Any], paths: list[str]) -> dict[str, Any]:
-            return await runtime.require_ics().post_multipart(
-                f"/api/assets/{asset_id}/versions",
-                files=mp,
-                data={"entry_path": entry_path, "paths": paths},
+            data: dict[str, Any] = {"entry_path": entry_path, "paths": paths}
+            if expected_version is not None:
+                data["expected_version"] = expected_version
+            if publication is not None:
+                data["publication"] = publication.model_dump_json()
+            return await publish(
+                lambda: runtime.require_ics().post_multipart(
+                    f"/api/assets/{asset_id}/versions",
+                    files=mp,
+                    data=data,
+                ),
+                publication,
+                project_id,
             )
 
         result = await upload_files(

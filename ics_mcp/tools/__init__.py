@@ -10,6 +10,7 @@ from ics_mcp.tools import (
     micro_app_access,
     micro_applications,
     ocr,
+    publications,
     read,
     relations,
     session,
@@ -34,6 +35,7 @@ def register_all(mcp: FastMCP) -> None:
     write_html.register(mcp)
     write_documents.register(mcp)
     write_versions.register(mcp)
+    publications.register(mcp)
     relations.register(mcp)
     tasks.register(mcp)
     share.register(mcp)

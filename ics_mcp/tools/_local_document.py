@@ -15,6 +15,7 @@ from fastmcp import Context
 
 from ics_mcp import models as M
 from ics_mcp._helpers import invalidate_slug_cache, resolve_id
+from ics_mcp._publication import publication_project, publish, require_expected_version
 from ics_mcp._runtime import runtime
 from ics_mcp._uploads import too_large
 from ics_mcp.config import get_settings
@@ -163,11 +164,19 @@ def spec_for_file(specs: Sequence[DocumentSpec], file_path: str) -> DocumentSpec
 
 
 async def upload_document_version(
-    ctx: Context, specs: Sequence[DocumentSpec], *, slug_or_id: str, file_path: str
+    ctx: Context,
+    specs: Sequence[DocumentSpec],
+    *,
+    slug_or_id: str,
+    file_path: str,
+    expected_version: M.ExpectedVersionArg = None,
+    publication: M.PublicationIn | None = None,
 ) -> dict[str, Any]:
     """Upload the file as the next version of a document asset; the asset's
     kind decides which spec the file must satisfy."""
+    require_expected_version(publication, expected_version)
     asset_id, meta = await resolve_id(slug_or_id)
+    project_id = await publication_project(publication, meta)
     kind = meta.get("kind")
     by_kind = {spec.kind: spec for spec in specs}
     if kind is None:
@@ -184,9 +193,19 @@ async def upload_document_version(
     async with progress_scope(ctx, total=2, message=f"Replace {spec.label}") as tick:
         filename, raw, mime = read_document(spec, file_path)
         await tick(1, f"+{filename}")
-        result = await runtime.require_ics().post_multipart(
-            f"/api/assets/{asset_id}/versions",
-            files=[("files", (filename, raw, mime))],
+        data: dict[str, Any] = {}
+        if expected_version is not None:
+            data["expected_version"] = expected_version
+        if publication is not None:
+            data["publication"] = publication.model_dump_json()
+        result = await publish(
+            lambda: runtime.require_ics().post_multipart(
+                f"/api/assets/{asset_id}/versions",
+                files=[("files", (filename, raw, mime))],
+                data=data or None,
+            ),
+            publication,
+            project_id,
         )
         await tick(1, "uploaded")
     invalidate_slug_cache(ctx, slug_or_id)

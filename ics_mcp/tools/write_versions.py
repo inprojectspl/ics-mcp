@@ -8,6 +8,7 @@ from fastmcp import Context, FastMCP
 
 from ics_mcp import models as M
 from ics_mcp._helpers import guarded, invalidate_slug_cache, map_ics_errors, resolve_id
+from ics_mcp._publication import publication_project, publish, require_expected_version
 from ics_mcp._runtime import runtime
 from ics_mcp._uploads import upload_files
 from ics_mcp.tools._annotations import DESTRUCTIVE
@@ -31,7 +32,11 @@ def register(mcp: FastMCP) -> None:
             "collection, `ics_asset_update_content(path=...)` is enough "
             "(cheaper, fewer arguments). For `html_bundle` use "
             "`ics_asset_html_replace_bundle`, for `pdf_doc` and `office_doc` "
-            "`ics_asset_replace_document`."
+            "`ics_asset_replace_document`. "
+            "Optional `expected_version` rejects stale writes with `version_conflict`. "
+            "Caller-persisted `publication` requires expected_version and confirms the stored "
+            "receipt. After an unknown outcome use ics_publication_get with the same key "
+            "and original project scope; gateway failures never trigger mutation retries."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -44,8 +49,12 @@ def register(mcp: FastMCP) -> None:
         entry_path: str | None = None,
         change_note: M.ChangeNoteArg = None,
         confirm: M.ConfirmFlag = None,
+        expected_version: M.ExpectedVersionArg = None,
+        publication: M.PublicationIn | None = None,
     ) -> dict[str, Any]:
-        asset_id, _ = await resolve_id(slug_or_id)
+        require_expected_version(publication, expected_version)
+        asset_id, meta = await resolve_id(slug_or_id)
+        project_id = await publication_project(publication, meta)
 
         async def send(mp: list[Any], paths: list[str]) -> dict[str, Any]:
             data: dict[str, Any] = {"paths": paths}
@@ -53,8 +62,16 @@ def register(mcp: FastMCP) -> None:
                 data["entry_path"] = entry_path
             if change_note:
                 data["change_note"] = change_note
-            return await runtime.require_ics().post_multipart(
-                f"/api/assets/{asset_id}/versions", files=mp, data=data
+            if expected_version is not None:
+                data["expected_version"] = expected_version
+            if publication is not None:
+                data["publication"] = publication.model_dump_json()
+            return await publish(
+                lambda: runtime.require_ics().post_multipart(
+                    f"/api/assets/{asset_id}/versions", files=mp, data=data
+                ),
+                publication,
+                project_id,
             )
 
         result = await upload_files(ctx, files, send, message="Uploading version")
@@ -66,7 +83,9 @@ def register(mcp: FastMCP) -> None:
         title="Restore a version",
         description=(
             "Promotes the given historical version to current. Creates a new "
-            "version (history stays safe)."
+            "version (history stays safe). "
+            "Optional `expected_version` checks the current version, not the historical "
+            "one being restored; stale writes return `version_conflict`."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -76,11 +95,16 @@ def register(mcp: FastMCP) -> None:
     )
     @map_ics_errors
     async def ics_asset_restore_version(
-        ctx: Context, slug_or_id: str, version: int, confirm: M.ConfirmFlag = None
+        ctx: Context,
+        slug_or_id: str,
+        version: int,
+        confirm: M.ConfirmFlag = None,
+        expected_version: M.ExpectedVersionArg = None,
     ) -> dict[str, Any]:
         asset_id, _ = await resolve_id(slug_or_id)
         result = await runtime.require_ics().post_json(
-            f"/api/assets/{asset_id}/versions/{version}/restore"
+            f"/api/assets/{asset_id}/versions/{version}/restore",
+            params={"expected_version": expected_version} if expected_version is not None else None,
         )
         invalidate_slug_cache(ctx, slug_or_id)
         return result

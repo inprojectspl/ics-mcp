@@ -20,7 +20,7 @@ sharing team documents.
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white)](./pyproject.toml)
 [![MCP 2025-11-25](https://img.shields.io/badge/MCP-2025--11--25-ff5500?style=flat-square)](https://modelcontextprotocol.io/specification/2025-11-25)
 [![FastMCP 3](https://img.shields.io/badge/FastMCP-3.x-111827?style=flat-square)](https://gofastmcp.com)
-[![61 tools](https://img.shields.io/badge/tools-61-059669?style=flat-square)](#tools)
+[![62 tools](https://img.shields.io/badge/tools-62-059669?style=flat-square)](#tools)
 
 [User guide](https://inprojectspl.github.io/ics-mcp/) ·
 [Quick start](#quick-start) ·
@@ -46,7 +46,7 @@ sharing team documents.
 - **Acts as you, never more.** Every tool call is a request to the ICS user-level API with the
   signed-in user's OAuth token. No shared service account and no administration tools; an
   administrator's token still carries that administrator's access.
-- **61 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
+- **62 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
   Word documents, versions, sharing, the relation graph and task context.
 - **Safe destructive operations.** Deletes and overwrites go through a confirmation gate:
   interactive elicitation, scripted `yolo` (only when the operator allows it) or `dry_run`.
@@ -227,7 +227,7 @@ uv run python scripts/check_remote.py \
 
 ## Tools
 
-61 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
+62 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
 `idempotentHint`, `openWorldHint`) and returns structured content. Documents are addressed by
 `slug_or_id` (a slug or a UUID), except `ics_asset_undelete`, which needs the UUID.
 `ics_help` returns longer guides to the assistant.
@@ -236,7 +236,7 @@ uv run python scripts/check_remote.py \
 |---|---|
 | Session and help | `ics_help`, `ics_whoami`, `ics_session_set_mode`, `ics_session_status` |
 | Discovery | `ics_assets_list`, `ics_assets_search`, `ics_asset_meta`, `ics_asset_list_files`, `ics_asset_outline`, `ics_projects_list`, `ics_shares_list` |
-| Read | `ics_asset_read`, `ics_asset_ocr`, `ics_asset_read_rendered`, `ics_asset_versions`, `ics_asset_diff`, `ics_share_resolve` |
+| Read | `ics_asset_read`, `ics_asset_ocr`, `ics_asset_read_rendered`, `ics_asset_versions`, `ics_asset_diff`, `ics_share_resolve`, `ics_publication_get` |
 | Write Markdown | `ics_asset_create_md`, `ics_asset_create_collection`, `ics_asset_rename`, `ics_asset_update_content`, `ics_asset_add_file`, `ics_asset_create_empty_file`, `ics_asset_move_file`, `ics_asset_delete_file`, `ics_asset_delete`, `ics_asset_undelete`, `ics_asset_pin`, `ics_asset_set_tags` |
 | HTML bundles | `ics_asset_create_html`, `ics_asset_html_replace_bundle`, `ics_asset_html_security_review` |
 | PDF and Word | `ics_asset_create_document`, `ics_asset_replace_document` |
@@ -297,6 +297,7 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | `ics_asset_ocr(slug_or_id, request?)` | OCR state of a scanned PDF (queued, running, done, failed); `request=True` queues OCR of the current version or retries it. |
 | `ics_asset_read_rendered(slug_or_id, version?)` | Rendered HTML. Expensive; prefer `ics_asset_read`. |
 | `ics_asset_versions(slug_or_id)` | Version history with authors. |
+| `ics_publication_get(publication, project_id?)` | Read a committed publication receipt by its original caller-persisted identity and project scope. A missing receipt leaves the outcome unknown. |
 | `ics_asset_diff(slug_or_id, v1, v2, path?)` | Diff between two versions. |
 | `ics_share_resolve(share_link, password?, path?, lines?)` | Read a document from a share link or token. |
 
@@ -413,6 +414,58 @@ The per-call `confirm` argument always wins: `confirm=true` runs without asking,
 | `migrate_to_collection(source_slug, new_title, first_filename)` | Turn a single Markdown document into a collection. |
 
 ## Rate limits and retries
+
+### Publication receipts
+
+`ics_asset_create_html` accepts `payload.publication`; the whole-version tools
+`ics_asset_new_version`, `ics_asset_html_replace_bundle` and
+`ics_asset_replace_document` accept `publication` alongside a required
+`expected_version`. The identity is supplied and persisted by the caller:
+
+```json
+{"id":"publication-42","order_id":"delivery-17","role":"acceptance-report"}
+```
+
+These fields match the ICS backend's publication contract. The MCP server never
+generates a key. Initial Markdown/collection/document creation, per-file writes
+and restore do not support publication identities.
+
+A keyed mutation is confirmed only after reading its matching durable backend
+receipt. The tool adds `publication_receipt` and returns the receipt's `version`,
+including for HTML creation whose original backend response has no version.
+That version may be older than the asset's current version. Calls without
+`publication` keep their existing request and response shape.
+
+After a timeout or gateway error the error retains its code and includes
+`data.outcome: "unknown"`, the original `publication` and `project_id`.
+Read `ics_publication_get` with exactly those values and the same principal.
+Missing receipts are inconclusive; do not mint a new key or blindly repeat the
+write. An explicit replay of the same semantic payload is a caller decision,
+never an automatic POST retry after a transport/gateway failure. The existing
+429 policy below remains unchanged. Changed payloads under the same identity return
+`publication_conflict`; stale new writes return `version_conflict`.
+
+This needs an ICS backend implementing publication receipts. An older backend that ignores
+`publication` may still apply a write: a `201` without a matching receipt returns
+`publication_unconfirmed` with outcome `unknown` and the known POST result.
+Deleting an asset consumes its publication key; read/replay refusal does not
+authorize recreating it with a fresh key.
+
+Run the real HTTP contract smoke with an existing backend checkout and its
+installed test environment:
+
+```bash
+bash scripts/test-publication-backend.sh /path/to/ics
+```
+
+It creates its own PostgreSQL/Redis containers, loopback backend, synthetic OAuth
+principal and temporary storage. It exercises HTML creation/replay, historical
+HTML replacement, Markdown/PDF replacement and receipt lookup after a discarded
+real POST acknowledgement. Only its own containers and anonymous volumes are
+removed. Ordinary `scripts/test.sh` tests remain hermetic; office multipart
+forwarding is also covered there.
+
+### HTTP retry policy
 
 ics-mcp assumes no limits of its own and reacts to what ICS answers:
 
