@@ -32,6 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without HTML comments (e.g. transcript timestamps), line numbers unchanged. Needs ICS with the same option;
   an older one rejects `format="markdown"` on a Markdown file.
 - Documentation site at <https://inprojectspl.github.io/ics-mcp/>, built with MkDocs from `docs/`.
+- Version-producing write tools accept an optional `expected_version` and pass the backend's
+  `version_conflict` on without retrying. Without it they behave as before; a conditional write
+  needs an ICS with the matching version checks.
 
 ### Changed
 

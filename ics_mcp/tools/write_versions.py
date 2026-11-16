@@ -31,7 +31,8 @@ def register(mcp: FastMCP) -> None:
             "collection, `ics_asset_update_content(path=...)` is enough "
             "(cheaper, fewer arguments). For `html_bundle` use "
             "`ics_asset_html_replace_bundle`, for `pdf_doc` and `office_doc` "
-            "`ics_asset_replace_document`."
+            "`ics_asset_replace_document`. "
+            "Optional `expected_version` rejects stale writes with `version_conflict`."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -44,6 +45,7 @@ def register(mcp: FastMCP) -> None:
         entry_path: str | None = None,
         change_note: M.ChangeNoteArg = None,
         confirm: M.ConfirmFlag = None,
+        expected_version: M.ExpectedVersionArg = None,
     ) -> dict[str, Any]:
         asset_id, _ = await resolve_id(slug_or_id)
 
@@ -53,6 +55,8 @@ def register(mcp: FastMCP) -> None:
                 data["entry_path"] = entry_path
             if change_note:
                 data["change_note"] = change_note
+            if expected_version is not None:
+                data["expected_version"] = expected_version
             return await runtime.require_ics().post_multipart(
                 f"/api/assets/{asset_id}/versions", files=mp, data=data
             )
@@ -66,7 +70,9 @@ def register(mcp: FastMCP) -> None:
         title="Restore a version",
         description=(
             "Promotes the given historical version to current. Creates a new "
-            "version (history stays safe)."
+            "version (history stays safe). "
+            "Optional `expected_version` checks the current version, not the historical "
+            "one being restored; stale writes return `version_conflict`."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -76,11 +82,16 @@ def register(mcp: FastMCP) -> None:
     )
     @map_ics_errors
     async def ics_asset_restore_version(
-        ctx: Context, slug_or_id: str, version: int, confirm: M.ConfirmFlag = None
+        ctx: Context,
+        slug_or_id: str,
+        version: int,
+        confirm: M.ConfirmFlag = None,
+        expected_version: M.ExpectedVersionArg = None,
     ) -> dict[str, Any]:
         asset_id, _ = await resolve_id(slug_or_id)
         result = await runtime.require_ics().post_json(
-            f"/api/assets/{asset_id}/versions/{version}/restore"
+            f"/api/assets/{asset_id}/versions/{version}/restore",
+            params={"expected_version": expected_version} if expected_version is not None else None,
         )
         invalidate_slug_cache(ctx, slug_or_id)
         return result

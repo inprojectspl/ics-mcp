@@ -21,6 +21,18 @@ from ics_mcp.models.vocab import (
     UploadShareMode,
 )
 
+ExpectedVersionArg = Annotated[
+    int | None,
+    Field(
+        ge=1,
+        strict=True,
+        description=(
+            "Version the change is based on. A stale version returns version_conflict "
+            "without retry; read and reconcile before resubmitting. Omit for legacy writes."
+        ),
+    ),
+]
+
 
 def _normalize_collection_path(p: str) -> str:
     """Mirror of ICS `normalize_collection_path` (`backend/app/collections_io.py`),

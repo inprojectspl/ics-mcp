@@ -162,7 +162,12 @@ def spec_for_file(specs: Sequence[DocumentSpec], file_path: str) -> DocumentSpec
 
 
 async def upload_document_version(
-    ctx: Context, specs: Sequence[DocumentSpec], *, slug_or_id: str, file_path: str
+    ctx: Context,
+    specs: Sequence[DocumentSpec],
+    *,
+    slug_or_id: str,
+    file_path: str,
+    expected_version: M.ExpectedVersionArg = None,
 ) -> dict[str, Any]:
     """Upload the file as the next version of a document asset; the asset's
     kind decides which spec the file must satisfy."""
@@ -186,6 +191,7 @@ async def upload_document_version(
         result = await runtime.require_ics().post_multipart(
             f"/api/assets/{asset_id}/versions",
             files=[("files", (filename, raw, mime))],
+            data={"expected_version": expected_version} if expected_version is not None else None,
         )
         await tick(1, "uploaded")
     invalidate_slug_cache(ctx, slug_or_id)

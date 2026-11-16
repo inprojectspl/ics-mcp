@@ -80,7 +80,8 @@ def register(mcp: FastMCP) -> None:
             "per-file update/add (security model: a bundle is an atomic deploy). "
             "Reversible via `ics_asset_restore_version`.\n\n"
             "Each file: exactly one of `content_path` (recommended over a few KB), "
-            "`content_text` or `content_base64`."
+            "`content_text` or `content_base64`. "
+            "Optional `expected_version` rejects stale writes with `version_conflict`."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -92,14 +93,18 @@ def register(mcp: FastMCP) -> None:
         entry_path: str,
         files: list[M.HtmlFile],
         confirm: M.ConfirmFlag = None,
+        expected_version: M.ExpectedVersionArg = None,
     ) -> dict[str, Any]:
         asset_id, _ = await resolve_id(slug_or_id)
 
         async def send(mp: list[Any], paths: list[str]) -> dict[str, Any]:
+            data: dict[str, Any] = {"entry_path": entry_path, "paths": paths}
+            if expected_version is not None:
+                data["expected_version"] = expected_version
             return await runtime.require_ics().post_multipart(
                 f"/api/assets/{asset_id}/versions",
                 files=mp,
-                data={"entry_path": entry_path, "paths": paths},
+                data=data,
             )
 
         result = await upload_files(

@@ -239,7 +239,8 @@ def register(mcp: FastMCP) -> None:
             "When not to use: for `html_bundle` use "
             "`ics_asset_html_replace_bundle` (per-file edits are blocked). "
             "To replace many files at once in an `md_collection` use "
-            "`ics_asset_new_version` (one new version instead of N separate ones)."
+            "`ics_asset_new_version` (one new version instead of N separate ones). "
+            "Optional `expected_version` rejects stale writes with `version_conflict`."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -257,12 +258,15 @@ def register(mcp: FastMCP) -> None:
         content_path: str | None = None,
         path: str | None = None,
         confirm: M.ConfirmFlag = None,
+        expected_version: M.ExpectedVersionArg = None,
     ) -> dict[str, Any]:
         asset_id, _ = await resolve_id(slug_or_id)
         raw = file_bytes(content, None, content_path)
         body: dict[str, Any] = {"content": raw.decode("utf-8")}
         if path:
             body["path"] = path
+        if expected_version is not None:
+            body["expected_version"] = expected_version
         result = await runtime.require_ics().put_json(f"/api/assets/{asset_id}/content", body)
         invalidate_slug_cache(ctx, slug_or_id)
         return result
@@ -274,7 +278,8 @@ def register(mcp: FastMCP) -> None:
             "Adds a new `.md` file to an md_collection (this kind only; "
             "for html_bundle use `ics_asset_html_replace_bundle`).\n\n"
             "Provide **exactly one** of: `content` (inline text) or `content_path` "
-            "(local path; recommended over a few KB)."
+            "(local path; recommended over a few KB). "
+            "Optional `expected_version` rejects stale writes with `version_conflict`."
         ),
         annotations=MUTATING,
     )
@@ -285,13 +290,17 @@ def register(mcp: FastMCP) -> None:
         path: str,
         content: str | None = None,
         content_path: str | None = None,
+        expected_version: M.ExpectedVersionArg = None,
     ) -> dict[str, Any]:
         asset_id, _ = await resolve_id(slug_or_id)
         raw = file_bytes(content, None, content_path)
+        data: dict[str, Any] = {"path": path}
+        if expected_version is not None:
+            data["expected_version"] = expected_version
         result = await runtime.require_ics().post_multipart(
             f"/api/assets/{asset_id}/files",
             files=[("file", (path.split("/")[-1], raw, "text/markdown"))],
-            data={"path": path},
+            data=data,
         )
         invalidate_slug_cache(ctx, slug_or_id)
         return result
@@ -299,17 +308,26 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(
         name="ics_asset_create_empty_file",
         title="Create an empty file in a collection",
-        description="Empty placeholder file in an md_collection.",
+        description=(
+            "Empty placeholder file in an md_collection. "
+            "Optional `expected_version` rejects stale writes with `version_conflict`."
+        ),
         annotations=MUTATING,
     )
     @map_ics_errors
     async def ics_asset_create_empty_file(
-        ctx: Context, slug_or_id: str, path: str, change_note: M.ChangeNoteArg = None
+        ctx: Context,
+        slug_or_id: str,
+        path: str,
+        change_note: M.ChangeNoteArg = None,
+        expected_version: M.ExpectedVersionArg = None,
     ) -> dict[str, Any]:
         asset_id, _ = await resolve_id(slug_or_id)
         body: dict[str, Any] = {"path": path}
         if change_note:
             body["change_note"] = change_note
+        if expected_version is not None:
+            body["expected_version"] = expected_version
         result = await runtime.require_ics().post_json(f"/api/assets/{asset_id}/files/empty", body)
         invalidate_slug_cache(ctx, slug_or_id)
         return result
@@ -317,7 +335,10 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(
         name="ics_asset_move_file",
         title="Move a file in a collection",
-        description="Changes the file path. Idempotent.",
+        description=(
+            "Changes the file path. Idempotent. "
+            "Optional `expected_version` rejects stale writes with `version_conflict`."
+        ),
         annotations=DESTRUCTIVE_IDEMP,
     )
     @guarded(
@@ -331,11 +352,15 @@ def register(mcp: FastMCP) -> None:
         from_path: str,
         to_path: str,
         confirm: M.ConfirmFlag = None,
+        expected_version: M.ExpectedVersionArg = None,
     ) -> dict[str, Any]:
         asset_id, _ = await resolve_id(slug_or_id)
+        body: dict[str, Any] = {"from_path": from_path, "to_path": to_path}
+        if expected_version is not None:
+            body["expected_version"] = expected_version
         result = await runtime.require_ics().patch_json(
             f"/api/assets/{asset_id}/files/move",
-            {"from_path": from_path, "to_path": to_path},
+            body,
         )
         invalidate_slug_cache(ctx, slug_or_id)
         return result
@@ -343,17 +368,27 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool(
         name="ics_asset_delete_file",
         title="Delete a file from a collection",
-        description="Deletes a specific file from an md_collection or html_bundle.",
+        description=(
+            "Deletes a specific file from an md_collection or html_bundle. "
+            "Optional `expected_version` rejects stale writes with `version_conflict`."
+        ),
         annotations=DESTRUCTIVE,
     )
     @guarded("delete_file", target=lambda slug_or_id, path, **_: f"{slug_or_id}:{path}")
     @map_ics_errors
     async def ics_asset_delete_file(
-        ctx: Context, slug_or_id: str, path: str, confirm: M.ConfirmFlag = None
+        ctx: Context,
+        slug_or_id: str,
+        path: str,
+        confirm: M.ConfirmFlag = None,
+        expected_version: M.ExpectedVersionArg = None,
     ) -> dict[str, Any]:
         asset_id, _ = await resolve_id(slug_or_id)
+        params: dict[str, Any] = {"path": path}
+        if expected_version is not None:
+            params["expected_version"] = expected_version
         result = await runtime.require_ics().delete_json(
-            f"/api/assets/{asset_id}/files", params={"path": path}
+            f"/api/assets/{asset_id}/files", params=params
         )
         invalidate_slug_cache(ctx, slug_or_id)
         return result
