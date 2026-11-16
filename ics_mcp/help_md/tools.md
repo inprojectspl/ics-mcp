@@ -223,6 +223,25 @@ Details: `ics_help('task-context')`.
 ## Versions
 - `ics_asset_new_version`, `ics_asset_restore_version` (destructive).
 
+### Conditional version writes
+The tools `ics_asset_update_content`, `ics_asset_add_file`,
+`ics_asset_create_empty_file`, `ics_asset_move_file`, `ics_asset_delete_file`,
+`ics_asset_new_version`, `ics_asset_html_replace_bundle`,
+`ics_asset_replace_document` and `ics_asset_restore_version` accept optional
+`expected_version` (an integer >= 1). Pass the version whose content your change
+is based on. For restore, this is the current version, separate from the older
+`version` you want to restore.
+
+This requires an ICS backend with conditional version writes (OpenProject #2351).
+MCP forwards the supplied version unchanged; the backend compares it under the
+asset lock before staging any files. A stale write returns HTTP 409 as the
+machine-readable `version_conflict`, with `field: expected_version`. MCP does
+not retry the mutation. Read the current content and reconcile your change;
+do not blindly replace the expected number with the latest one. Factory callers
+must supply the precondition. Omitting it (or passing null) preserves legacy
+unconditional writes; MCP does not infer a version from metadata or silently
+retry without the precondition.
+
 ## Share
 - `ics_share_create_link`, `ics_share_grant_user`.
 - `ics_share_revoke` (destructive): `share_id` disables a link,

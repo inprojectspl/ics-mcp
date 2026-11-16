@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependencies with published advisories are upgraded: fastmcp 3.4.10, authlib 1.9.1, certifi 2026.10.23,
   dnspython 2.9.0, opentelemetry-api 1.45.1. FastMCP now wraps an argument validation error in its own
   `ValidationError`; the `invalid_argument` mapping unwraps it, so tool errors keep their shape.
+- joserfc 1.7.6 replaces 1.7.5 (CVE-2026-119284); the strict runtime dependency audit passes without
+  exceptions.
+- dnspython 2.9.2 (CVE-2026-128089) and opentelemetry-api 1.45.2 (CVE-2026-126360) replace versions
+  with a published advisory.
 
 ### Added
 
@@ -30,6 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without HTML comments (e.g. transcript timestamps), line numbers unchanged. Needs ICS with the same option;
   an older one rejects `format="markdown"` on a Markdown file.
 - Documentation site at <https://inprojectspl.github.io/ics-mcp/>, built with MkDocs from `docs/`.
+- Version-producing write tools accept an optional `expected_version` and pass the backend's
+  `version_conflict` on without retrying. Without it they behave as before; a conditional write
+  needs an ICS with the matching version checks.
+- Publication identities for HTML creation and whole-version replacements, supplied and kept by the
+  caller and confirmed by a durable ICS receipt with its version. `ics_publication_get` reads the
+  original result after a lost acknowledgement; an unknown outcome keeps the identity, and the
+  server neither generates keys nor retries a write after a transport or gateway failure.
+  `scripts/test-publication-backend.sh` runs the contract against a real ICS backend.
 
 ### Changed
 
