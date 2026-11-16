@@ -60,6 +60,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   original result after a lost acknowledgement; an unknown outcome keeps the identity, and the
   server neither generates keys nor retries a write after a transport or gateway failure.
   `scripts/test-publication-backend.sh` runs the contract against a real ICS backend.
+- The user guide covers handing out and running micro-applications, moving a document to a project,
+  safe retries with `expected_version` and publication keys, the confirmations of the
+  micro-application tools, and the errors of publications and micro-applications.
 
 ### Changed
 

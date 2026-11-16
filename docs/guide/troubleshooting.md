@@ -77,6 +77,10 @@ Codes that come from ICS itself are passed through unchanged; the complete list 
 | `doc_type_unknown` | The document type key does not exist or is archived. | Ask the assistant to list the types with `ics_doc_types`. |
 | `metadata_invalid` | A metadata value is invalid; `field` names it. | Correct that field. |
 | `maintainer_unknown` | The maintainer's e-mail is neither yours nor of someone the document is shared with. | Share the document with that person first. |
+| `version_conflict` | The write named an `expected_version`, and someone published a newer version in the meantime. Nothing was changed. | Let the assistant read the current version and decide again. |
+| `publication_conflict` | The publication key was already used for different content. | Use a new key for a new publication; repeat the old key only with the same content. |
+| `publication_unconfirmed` | ICS answered the write but no receipt confirms it, usually an older ICS that ignores publication keys. The write may have happened. | Check with `ics_asset_versions` or `ics_publication_get` before writing again. |
+| an error with `outcome: unknown` | The connection failed during a keyed write, so it is not known whether it happened. | Call `ics_publication_get` with the same `publication` and `project_id`. A missing receipt is not proof that nothing happened. |
 
 ## Sharing
 
@@ -90,6 +94,20 @@ Codes that come from ICS itself are passed through unchanged; the complete list 
 | `share_password_required`, `share_password_invalid` | The link needs a password, or the password is wrong. ICS limits failed attempts. | Give the assistant the right password. |
 | `share_login_required`, `share_access_denied` | The link needs a signed-in member of the organization, or is restricted in another way (for example to specific e-mail addresses). | Open it in the browser, or ask the owner for access. |
 | `share_not_found`, `share_revoked`, `share_expired`, `share_spent` | The link does not exist, was revoked (or its document deleted), has expired, or reached its view limit. | Ask the owner for a new link. |
+
+## Micro-applications
+
+| Code | What it means | What to do |
+|---|---|---|
+| `microapps_disabled` | Micro-applications are not enabled on this ICS. | Ask your administrator. |
+| `manifest_invalid` | The package breaks the contract. Each problem names the file, the place in it and a code. | The assistant fixes the package and plans again. |
+| `destructive_change`, `schema_incompatible` | The release would remove or change data the running release needs. Only additive changes are allowed now. | Keep the old fields and add new ones, or publish a transitional release first, as the message says. |
+| `publish_permission_required` | Only the owner of the app or of its project, or someone given the right, can publish. An editor can plan but not apply. | Ask the owner to publish, or to give you the right. |
+| `plan_expired`, `digest_mismatch`, `generation_conflict` | The plan is older than an hour, the package changed after planning, or someone published or controlled the app in the meantime. | Plan again and apply the new plan. |
+| `microapp_requires_agent_api` | A generic write tool was used on an app, or a package with `microapp.json` was uploaded as a document. | Use `ics_microapp_plan` and `ics_microapp_apply`. |
+| `microapp_source_restricted` | Only the app's publishers can read its package files. | Read the app itself with `ics_asset_read` without a `path`. |
+| `microapp_not_addressable` | A relation pointed at a file or heading inside an app. | Relate to the app as a whole. |
+| `app_permissions_invalid` | A share link named a role or permission the app does not define. `allowed_roles` and `allowed` list the valid ones. | Pick from the list. |
 
 ## Relations and tasks
 

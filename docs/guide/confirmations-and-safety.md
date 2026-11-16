@@ -23,6 +23,9 @@ one for interactive work and for unattended agents.
 | Remove a relation | `ics_relation_remove` |
 | Remove a document's link to a task | `ics_task_unlink` |
 | Replace a project's tracker links or key documents | `ics_project_links_set` |
+| Publish a micro-application release | `ics_microapp_apply` |
+| Enable, suspend, put to sleep or restart a micro-application | `ics_microapp_control` |
+| Set a person's or project's roles in a micro-application | `ics_microapp_access_set` |
 
 The question names the action and its target, for example the document slug, the file being
 moved, or both ends of a relation, so you can tell what you are approving.
