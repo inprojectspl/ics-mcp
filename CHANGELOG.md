@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ValidationError`; the `invalid_argument` mapping unwraps it, so tool errors keep their shape.
 - joserfc 1.7.6 replaces 1.7.5 (CVE-2026-119284); the strict runtime dependency audit passes without
   exceptions.
+- dnspython 2.9.2 (CVE-2026-128089) and opentelemetry-api 1.45.2 (CVE-2026-126360) replace versions
+  with a published advisory.
 
 ### Added
 
