@@ -37,6 +37,26 @@ ics_asset_html_security_review(slug_or_id=resp.slug)  # check the status
 ics_share_create_link(slug_or_id=resp.slug, mode="public")
 ```
 
+## Publish with a durable receipt
+
+Persist `publication={id, order_id, role}` before calling `ics_asset_create_html`
+(inside `payload`) or a whole-version replacement tool. A keyed replacement
+also requires the caller's `expected_version`. The server never invents a key.
+Initial Markdown/document creation and per-file edits do not accept publication.
+
+Success includes `publication_receipt` and its confirmed `version`; a historical
+receipt does not claim to be the asset's latest version. A backend `201` alone
+does not prove the receipt exists. `publication_unconfirmed` means the write may
+already have happened on a backend that ignored the identity.
+
+On timeout or gateway error, preserve the returned `data.publication` and
+`data.project_id`, then call `ics_publication_get` with those original values.
+The outcome is **unknown** until a matching receipt is read. A missing receipt
+is inconclusive: never create a new key merely because an acknowledgement was
+lost, and do not blindly repeat the mutation. Gateway failures never trigger an
+automatic POST retry. Replaying the same payload/key, when appropriate, is an
+explicit caller action; a changed payload is `publication_conflict`.
+
 ## Organize a set of notes into a project
 
 ```

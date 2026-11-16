@@ -8,6 +8,7 @@ from fastmcp import Context, FastMCP
 
 from ics_mcp import models as M
 from ics_mcp._helpers import guarded, invalidate_slug_cache, map_ics_errors, resolve_id
+from ics_mcp._publication import publication_project, publish, require_expected_version
 from ics_mcp._runtime import runtime
 from ics_mcp._uploads import upload_files
 from ics_mcp.tools._annotations import DESTRUCTIVE
@@ -32,7 +33,10 @@ def register(mcp: FastMCP) -> None:
             "(cheaper, fewer arguments). For `html_bundle` use "
             "`ics_asset_html_replace_bundle`, for `pdf_doc` and `office_doc` "
             "`ics_asset_replace_document`. "
-            "Optional `expected_version` rejects stale writes with `version_conflict`."
+            "Optional `expected_version` rejects stale writes with `version_conflict`. "
+            "Caller-persisted `publication` requires expected_version and confirms the stored "
+            "receipt. After an unknown outcome use ics_publication_get with the same key "
+            "and original project scope; gateway failures never trigger mutation retries."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -46,8 +50,11 @@ def register(mcp: FastMCP) -> None:
         change_note: M.ChangeNoteArg = None,
         confirm: M.ConfirmFlag = None,
         expected_version: M.ExpectedVersionArg = None,
+        publication: M.PublicationIn | None = None,
     ) -> dict[str, Any]:
-        asset_id, _ = await resolve_id(slug_or_id)
+        require_expected_version(publication, expected_version)
+        asset_id, meta = await resolve_id(slug_or_id)
+        project_id = await publication_project(publication, meta)
 
         async def send(mp: list[Any], paths: list[str]) -> dict[str, Any]:
             data: dict[str, Any] = {"paths": paths}
@@ -57,8 +64,14 @@ def register(mcp: FastMCP) -> None:
                 data["change_note"] = change_note
             if expected_version is not None:
                 data["expected_version"] = expected_version
-            return await runtime.require_ics().post_multipart(
-                f"/api/assets/{asset_id}/versions", files=mp, data=data
+            if publication is not None:
+                data["publication"] = publication.model_dump_json()
+            return await publish(
+                lambda: runtime.require_ics().post_multipart(
+                    f"/api/assets/{asset_id}/versions", files=mp, data=data
+                ),
+                publication,
+                project_id,
             )
 
         result = await upload_files(ctx, files, send, message="Uploading version")

@@ -8,7 +8,7 @@ from pathlib import PurePosixPath
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ics_mcp.models.assets import OcrState
 from ics_mcp.models.vocab import (
@@ -32,6 +32,29 @@ ExpectedVersionArg = Annotated[
         ),
     ),
 ]
+
+
+class PublicationIn(BaseModel):
+    """Caller-persisted identity from ICS `routes/_publication.py`. Never generated here."""
+
+    model_config = ConfigDict(extra="forbid")
+    id: str = Field(min_length=1, max_length=200, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$")
+    order_id: str = Field(min_length=1, max_length=200, pattern=r"^[^\x00-\x20\x7f]+$")
+    role: str = Field(min_length=1, max_length=100, pattern=r"^[^\x00-\x20\x7f]+$")
+
+
+class PublicationReceiptOut(BaseModel):
+    """Committed result from `GET /api/assets/publications/{publication_id}`."""
+
+    publication_id: str
+    project_id: UUID | None
+    order_id: str
+    role: str
+    schema_version: Literal[1]
+    payload_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
+    asset_id: UUID
+    version: int = Field(ge=1, strict=True)
+    result: dict[str, Any]
 
 
 def _normalize_collection_path(p: str) -> str:
@@ -189,6 +212,10 @@ class CreateHtmlIn(BaseModel):
     tags: TagList = Field(default_factory=list)
     doc_type: DocTypeArg = None
     summary: SummaryArg = None
+    publication: PublicationIn | None = Field(
+        None,
+        description="Controller-persisted identity. Keep it after unknown; read its receipt before retrying.",
+    )
 
 
 class HtmlBundleOut(BaseModel):
@@ -200,6 +227,13 @@ class HtmlBundleOut(BaseModel):
     file_count: int
     size_bytes: int
     security_status: str
+
+
+class HtmlPublicationOut(HtmlBundleOut):
+    """Optional confirmed publication fields; unkeyed creates keep HtmlBundleOut."""
+
+    version: int | None = Field(None, ge=1)
+    publication_receipt: PublicationReceiptOut | None = None
 
 
 class SecurityReviewOut(BaseModel):

@@ -70,7 +70,10 @@ def register(mcp: FastMCP) -> None:
             "format may change) asset. ICS converts and rescans it. History is "
             "kept: reversible via `ics_asset_restore_version`. Other kinds: "
             "`ics_asset_new_version` or `ics_asset_html_replace_bundle`. "
-            "Optional `expected_version` rejects stale writes with `version_conflict`."
+            "Optional `expected_version` rejects stale writes with `version_conflict`. "
+            "Caller-persisted `publication` requires expected_version and confirms the stored "
+            "receipt. After an unknown outcome use ics_publication_get with the same key "
+            "and original project scope; gateway failures never trigger mutation retries."
         ),
         annotations=DESTRUCTIVE,
     )
@@ -85,6 +88,7 @@ def register(mcp: FastMCP) -> None:
         file_path: str,
         confirm: M.ConfirmFlag = None,
         expected_version: M.ExpectedVersionArg = None,
+        publication: M.PublicationIn | None = None,
     ) -> dict[str, Any]:
         return await upload_document_version(
             ctx,
@@ -92,4 +96,5 @@ def register(mcp: FastMCP) -> None:
             slug_or_id=slug_or_id,
             file_path=file_path,
             expected_version=expected_version,
+            publication=publication,
         )
