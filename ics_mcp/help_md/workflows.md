@@ -57,6 +57,21 @@ lost, and do not blindly repeat the mutation. Gateway failures never trigger an
 automatic POST retry. Replaying the same payload/key, when appropriate, is an
 explicit caller action; a changed payload is `publication_conflict`.
 
+## Build a micro-application and hand it to people
+
+```
+ics_microapp_contract()                                  # overview, then sections
+ics_microapp_contract(section="template")                # a working package to adapt
+ics_microapp_plan(files=[...])                           # -> plan_id, release_digest, expected_generation
+ics_microapp_apply(plan_id, digest=release_digest, expected_generation=0)
+ics_microapp_status(operation_id=...)                    # until terminal; app_url
+ics_microapp_access(asset_id)                            # the app's roles, what each permission unlocks
+ics_microapp_access_set(asset_id, user_email="me@...", roles=["manager"])        # yourself first
+ics_microapp_access_set(asset_id, user_email="bob@...", roles=["employee"])
+ics_microapp_access_set(asset_id, project_id="...", roles=["employee"])          # a whole team
+ics_share_create_link(slug_or_id=asset_id, mode="public", app_roles=["voter"])   # no account needed
+```
+
 ## Organize a set of notes into a project
 
 ```

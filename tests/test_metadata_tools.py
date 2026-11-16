@@ -630,3 +630,18 @@ async def test_meta_returns_the_fields_set_meta_writes(real_client, respx_mock, 
     assert payload["language"] == "en"
     assert payload["properties"] == {"owner_team": "platform"}
     assert payload["summary_version"] == 3
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=True)
+async def test_set_meta_moves_an_asset_into_a_project_or_out(real_client, respx_mock, make_mcp):
+    mcp = make_mcp(metadata)
+    mock_resolve(respx_mock)
+    move = respx_mock.patch(f"{ICS}/api/assets/by-slug/abc/project").mock(
+        return_value=httpx.Response(200, json={"slug": "abc", "project_id": OTHER_ID})
+    )
+    out = await call_tool(mcp, "ics_asset_set_meta", {"slug_or_id": "abc", "project_id": OTHER_ID})
+    assert json.loads(move.calls[0].request.content) == {"project_id": OTHER_ID}
+    assert out["project"]["project_id"] == OTHER_ID
+    await call_tool(mcp, "ics_asset_set_meta", {"slug_or_id": "abc", "project_id": ""})
+    assert json.loads(move.calls[1].request.content) == {"project_id": None}

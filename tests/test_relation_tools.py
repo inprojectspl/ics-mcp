@@ -449,7 +449,7 @@ async def test_relation_add_dry_run_previews_by_title(real_client, respx_mock, m
     respx_mock.get(f"{ICS}/api/assets/by-slug/abc/meta").mock(
         return_value=httpx.Response(200, json={"id": ASSET_ID, "slug": "abc", "title": "Design"})
     )
-    respx_mock.get(f"{ICS}/api/assets/{TARGET_ID}").mock(
+    respx_mock.get(f"{ICS}/api/assets/by-id/{TARGET_ID}/meta").mock(
         return_value=httpx.Response(200, json={"id": TARGET_ID, "slug": "goals", "title": "Goals"})
     )
     route = respx_mock.post(f"{ICS}/api/assets/{ASSET_ID}/relations")
@@ -624,7 +624,7 @@ async def test_neighbourhood_depth_two_keeps_freshness_and_edge_types(
 @respx.mock(assert_all_called=False)
 async def test_neighbourhood_uuid_resolves_slug(real_client, respx_mock, make_mcp):
     mcp = make_mcp(relations)
-    respx_mock.get(f"{ICS}/api/assets/{ASSET_ID}").mock(
+    respx_mock.get(f"{ICS}/api/assets/by-id/{ASSET_ID}/meta").mock(
         return_value=httpx.Response(200, json={"id": ASSET_ID, "slug": "abc"})
     )
     route = respx_mock.get(f"{ICS}/api/assets/by-slug/abc/neighbourhood").mock(

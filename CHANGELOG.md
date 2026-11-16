@@ -27,6 +27,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Micro-applications (ICS `ics.microapp/v1alpha1`, PoC): `ics_microapp_contract` (the build standard
+  in sections with one `contract_hash`), `ics_microapp_plan` (checks a complete package and binds it
+  to a digest), `ics_microapp_apply` (idempotent, returns a durable `operation_id`),
+  `ics_microapp_status`, `ics_microapp_control` (enable, suspend, sleep, restart) and
+  `ics_microapp_logs`, `ics_microapp_access` (the app's roles, what each permission unlocks, who
+  has what) and `ics_microapp_access_set` (exactly these roles and permissions plus opening the
+  app, in one idempotent call), plus the `micro-applications` help topic. `ics_share_create_link`
+  takes `app_roles` and `app_permissions`. `ics_asset_read` of an app returns its own view with
+  the records first (`app_view`) and honours `lines`/`max_lines`. An asset id given to a read
+  tool resolves for any viewer through ICS `/api/assets/by-id/{id}/meta` (an older ICS falls
+  back to the editor route). `ics_asset_versions` and `ics_asset_diff` compare an app's package
+  versions for its publishers; the diff adds `app_changes` (roles, permissions, endpoints, data)
+  and keeps them when a long file list is cut. `ics_microapp_plan` takes `change_note`.
+  `ics_asset_read` and `ics_asset_list_files` show a micro-application's package through the
+  ICS author route, which only publishers may open; the `ics://asset/<slug>` resource reads the
+  app itself. Generic tools that cannot serve an app (outline, rendered read, an archived
+  version without `path`, writes) answer with a hint to the right tool. Needs ICS with
+  micro-applications enabled.
 - A ChatGPT connection guide covering remote MCP, OAuth discovery, Google Workspace sign-in,
   confirmations and HTTP file-upload limits. `scripts/check_remote.py` checks the public metadata
   and health routes with anonymous GET requests and reports configuration/routing failures.

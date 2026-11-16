@@ -351,7 +351,11 @@ async def test_publication_protocol_schema_and_unknown_help():
 async def test_uuid_metadata_requires_original_project_scope_before_keyed_post(
     real_client, respx_mock, make_mcp
 ):
-    # The real UUID endpoint deliberately returns a smaller shape than /meta.
+    # An ICS without `/by-id/{id}/meta` answers a bare 404; its UUID endpoint
+    # deliberately returns a smaller shape than /meta.
+    respx_mock.get(f"{ICS}/api/assets/by-id/{ASSET_ID}/meta").respond(
+        404, json={"detail": "Not Found"}
+    )
     respx_mock.get(f"{ICS}/api/assets/{ASSET_ID}").respond(
         200, json={"id": ASSET_ID, "slug": "abc", "kind": "md_single", "version": 5}
     )
@@ -373,7 +377,36 @@ async def test_uuid_metadata_requires_original_project_scope_before_keyed_post(
     )
     assert meta.call_count == post.call_count == get.call_count == 1
     assert result["publication_receipt"]["project_id"] == PROJECT
-    assert [call.request.method for call in respx_mock.calls] == ["GET", "GET", "POST", "GET"]
+    assert [call.request.method for call in respx_mock.calls] == [
+        "GET",
+        "GET",
+        "GET",
+        "POST",
+        "GET",
+    ]
+
+
+@respx.mock
+async def test_uuid_meta_route_carries_the_project_scope(real_client, respx_mock, make_mcp):
+    meta = respx_mock.get(f"{ICS}/api/assets/by-id/{ASSET_ID}/meta").respond(
+        200, json=asset_meta(project_id=PROJECT)
+    )
+    post = respx_mock.post(f"{ICS}/api/assets/{ASSET_ID}/versions").respond(201, json=VERSION)
+    lookup(respx_mock, receipt(VERSION, version=6, project_id=PROJECT))
+    result = await call_tool(
+        make_mcp(write_versions),
+        "ics_asset_new_version",
+        {
+            "slug_or_id": ASSET_ID,
+            "files": [{"path": "a.md", "content": "x"}],
+            "expected_version": 5,
+            "publication": PUBLICATION,
+            "confirm": True,
+        },
+    )
+    assert meta.call_count == post.call_count == 1
+    assert result["publication_receipt"]["project_id"] == PROJECT
+    assert [call.request.method for call in respx_mock.calls] == ["GET", "POST", "GET"]
 
 
 @respx.mock

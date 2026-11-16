@@ -86,3 +86,19 @@ async def test_invalid_version_is_rejected_before_ics(real_client, respx_mock, m
     with pytest.raises(ResourceError):
         await read_resource(mcp, "ics://asset/abc@v0")
     assert not route.called
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_an_app_resource_is_the_app_as_it_runs(real_client, respx_mock, make_mcp):
+    mcp = make_mcp(resources_mod)
+    respx_mock.get(f"{ICS}/api/assets/by-slug/app/meta").mock(
+        return_value=httpx.Response(
+            200, json={"id": "a1", "slug": "app", "kind": "micro_application"}
+        )
+    )
+    doc = respx_mock.get(f"{ICS}/api/micro-applications/a1/document").mock(
+        return_value=httpx.Response(200, json={"markdown": "# App\n\n## App view\n"})
+    )
+    body = _text(await read_resource(mcp, "ics://asset/app"))
+    assert "## App view" in body and doc.calls.last.request.url.params["html"] == "false"

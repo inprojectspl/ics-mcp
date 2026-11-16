@@ -41,7 +41,8 @@ def register(mcp: FastMCP) -> None:
             "(interactive/yolo/dry_run).\n"
             "- `auth`: OAuth flow, rate limits, audience binding.\n"
             "- `graph`: relation types and walking the document graph.\n"
-            "- `task-context`: documents of a task, task links, project links.\n\n"
+            "- `task-context`: documents of a task, task links, project links.\n"
+            "- `micro-applications`: build, publish and control micro-applications.\n\n"
             "Without an argument returns `overview`. Call `tool-selection` "
             "when unsure which of two tools to use."
         ),
@@ -57,6 +58,7 @@ def register(mcp: FastMCP) -> None:
             "auth",
             "graph",
             "task-context",
+            "micro-applications",
         ] = "overview",
     ) -> M.HelpOut:
         return M.HelpOut(topic=topic, content_markdown=_help_content(topic))

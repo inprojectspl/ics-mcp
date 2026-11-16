@@ -48,3 +48,14 @@ async def test_several_errors_are_all_reported(settings):
     )
     fields = {err["field"], *(e["field"] for e in err["data"]["errors"])}
     assert fields == {"direction", "depth"}
+
+
+@pytest.mark.asyncio
+async def test_a_malformed_app_role_names_the_field(settings):
+    err = await _error(
+        settings,
+        "ics_microapp_access_set",
+        {"asset_id": "a", "user_email": "b@x", "roles": ["Boss Role"], "confirm": True},
+    )
+    assert err["code"] == "invalid_argument"
+    assert err["field"].startswith("roles")

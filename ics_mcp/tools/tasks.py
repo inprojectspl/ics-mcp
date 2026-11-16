@@ -22,7 +22,7 @@ from ics_mcp._helpers import (
     resolve_id,
     resolve_id_cached,
 )
-from ics_mcp._payload import fit_count, maybe_truncate
+from ics_mcp._payload import fit_list, maybe_truncate
 from ics_mcp._runtime import runtime
 from ics_mcp.config import get_settings
 from ics_mcp.confirm import confirm_or_skip
@@ -65,7 +65,6 @@ _OVERSIZE_HINT = (
     "ICS sent a pack larger than its own estimate: lower `budget_tokens` or `depth`, "
     "or drop `include`."
 )
-_LIST_HINT = "Cut to the response limit; the omitted entries come last in ICS order."
 #: Added when `ics_task_context` runs without `project`: ICS then skips the
 #: project key documents without saying so.
 _NO_PROJECT_WARNING = {
@@ -162,19 +161,6 @@ def pack_cap(pack: Mapping[str, Any]) -> int:
     far larger than ICS claims."""
     own = CHARS_PER_TOKEN * int(pack.get("estimated_tokens") or 0)
     return max(own, get_settings().mcp_response_max_chars)
-
-
-def fit_list(data: dict[str, Any], key: str) -> dict[str, Any]:
-    """Keep the first entries of `data[key]` that fit the response limit."""
-    items: list[Any] = data.get(key) or []
-
-    def build(k: int) -> dict[str, Any]:
-        out = {**data, key: items[:k]}
-        if k < len(items):
-            out.update(truncated=True, omitted=len(items) - k, hint=_LIST_HINT)
-        return out
-
-    return build(fit_count(len(items), build))
 
 
 async def describe_task_link(*, ref_id: Any, **_: Any) -> str:

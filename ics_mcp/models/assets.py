@@ -181,6 +181,11 @@ class AssetReadOut(BaseModel):
     #: Current asset version. Together with `version` it answers "is this an
     #: archived version?" without an extra `ics_asset_versions` call.
     current_version: int | None = None
+    #: micro_application only: `cursor` of the next page per collection.
+    next_cursors: dict[str, str] | None = None
+    #: micro_application only: the app's own view at the top of `content`
+    #: (`endpoint`), with `error` when it could not be rendered.
+    app_view: dict[str, str | None] | None = None
     #: pdf_doc only: page count of the PDF whose extracted text is `content`.
     page_count: int | None = None
     #: pdf_doc only: pages with a text layer, and pages whose text came from OCR.

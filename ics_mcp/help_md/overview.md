@@ -13,6 +13,11 @@ content inside an organization. An asset is:
 - **`office_doc`**: one uploaded Word/ODF text document (.docx, .odt,
   legacy .doc). ICS converts it to Markdown (headings, lists, tables,
   footnotes; images become `[image]`), read and searched like a PDF.
+- **`micro_application`**: an app people use that keeps its own data (a
+  register, bookings, a poll). It runs on its own origin; `ics_asset_read`
+  returns it as Markdown with the records you may see, it is published with
+  `ics_microapp_plan` + `ics_microapp_apply` and found by title, summary
+  and tags. See `ics_help('micro-applications')`.
 
 Every asset:
 - belongs to an owner,

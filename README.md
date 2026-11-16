@@ -20,7 +20,7 @@ sharing team documents.
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white)](./pyproject.toml)
 [![MCP 2025-11-25](https://img.shields.io/badge/MCP-2025--11--25-ff5500?style=flat-square)](https://modelcontextprotocol.io/specification/2025-11-25)
 [![FastMCP 3](https://img.shields.io/badge/FastMCP-3.x-111827?style=flat-square)](https://gofastmcp.com)
-[![54 tools](https://img.shields.io/badge/tools-54-059669?style=flat-square)](#tools)
+[![62 tools](https://img.shields.io/badge/tools-62-059669?style=flat-square)](#tools)
 
 [User guide](https://inprojectspl.github.io/ics-mcp/) ·
 [Quick start](#quick-start) ·
@@ -46,7 +46,7 @@ sharing team documents.
 - **Acts as you, never more.** Every tool call is a request to the ICS user-level API with the
   signed-in user's OAuth token. No shared service account and no administration tools; an
   administrator's token still carries that administrator's access.
-- **54 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
+- **62 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
   Word documents, versions, sharing, the relation graph and task context.
 - **Safe destructive operations.** Deletes and overwrites go through a confirmation gate:
   interactive elicitation, scripted `yolo` (only when the operator allows it) or `dry_run`.
@@ -227,7 +227,7 @@ uv run python scripts/check_remote.py \
 
 ## Tools
 
-54 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
+62 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
 `idempotentHint`, `openWorldHint`) and returns structured content. Documents are addressed by
 `slug_or_id` (a slug or a UUID), except `ics_asset_undelete`, which needs the UUID.
 `ics_help` returns longer guides to the assistant.
@@ -245,6 +245,7 @@ uv run python scripts/check_remote.py \
 | Tasks | `ics_task_context`, `ics_task_link`, `ics_task_unlink`, `ics_asset_external_refs`, `ics_project_links`, `ics_project_links_set` |
 | Versions | `ics_asset_new_version`, `ics_asset_restore_version` |
 | Sharing | `ics_share_create_link`, `ics_share_grant_user`, `ics_share_revoke` |
+| Micro-applications | `ics_microapp_contract`, `ics_microapp_plan`, `ics_microapp_apply`, `ics_microapp_status`, `ics_microapp_control`, `ics_microapp_logs`, `ics_microapp_access`, `ics_microapp_access_set` |
 
 Tools that take file content accept inline content or `content_path`, a local path the server
 reads from disk (stdio only), which keeps large files out of the model's context.
@@ -258,7 +259,7 @@ reads from disk (stdio only), which keeps large files out of the model's context
 
 | Tool | Purpose |
 |---|---|
-| `ics_help(topic?)` | Guides: `overview`, `workflows`, `tools`, `tool-selection`, `confirm`, `auth`, `graph`, `task-context`. |
+| `ics_help(topic?)` | Guides: `overview`, `workflows`, `tools`, `tool-selection`, `confirm`, `auth`, `graph`, `task-context`, `micro-applications`. |
 | `ics_whoami()` | The signed-in user, scope and client. |
 | `ics_session_set_mode(mode)` | Confirm mode for this session: `interactive`, `yolo`, `dry_run`. |
 | `ics_session_status()` | Current mode, server and protocol versions. |
@@ -270,16 +271,29 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | `ics_assets_list(kind?, project_id?, pinned?, shared_with_me?, owned?, tag?, doc_type?, freshness?, updated_since?, touched_since?, q?, limit?, cursor?)` | Paginated list with filters, 20 per page by default and cut to the response limit. Compact items carry the summary preview, document type, freshness, maintainer, successor and estimated tokens. `updated_since` means a content change, `touched_since` any change. The cheapest first step. |
 | `ics_assets_search(q, kind?, project_id?, doc_type?, tag?, freshness?, limit?, offset?, detail?, match?)` | Full-text search in Markdown, PDF text and converted Word/ODF documents. All words by default, accent-insensitive prefixes and quoted phrases; `match="any"` broadens. Continue with `next_offset`. `detail="full"` returns ids, scores and highlights. |
 | `ics_asset_meta(slug_or_id)` | Metadata only, with the full summary. |
-| `ics_asset_list_files(slug_or_id, version?)` | Files of a collection or bundle, optionally of an older version. |
+| `ics_asset_list_files(slug_or_id, version?)` | Files of a collection or bundle, optionally of an older version; a micro-application's package (publishers only). |
 | `ics_asset_outline(slug_or_id, wait?, edges?, max_level?, offset?)` | Structure (headings with `line`, `end_line` and `anchor`, files, wikilink graph) without content; outgoing relations with `edges=true`. |
 | `ics_projects_list()` | Projects visible to the user. |
 | `ics_shares_list(slug_or_id)` | Share links and user grants of a document. |
+
+**Micro-applications** (ICS `ics.microapp/v1alpha1`, needs ICS with micro-applications enabled)
+
+| Tool | Purpose |
+|---|---|
+| `ics_microapp_contract(section?, part?)` | The build standard: manifest JSON Schema, handler SDK types, browser SDK, a working template, limits, errors, management API; large sections come in parts under one `contract_hash`. |
+| `ics_microapp_plan(files? \| package_dir?, asset_id?, project_id?)` | Checks a complete package and binds it to a digest without changing the running app; diagnostics name file, pointer and code. |
+| `ics_microapp_apply(plan_id, digest, expected_generation, idempotency_key?, confirm?)` | Publishes exactly the planned package and returns a durable `operation_id`; the same key returns the same operation. Needs `app.publish`. |
+| `ics_microapp_status(asset_id? \| operation_id?, q?, state?, offset?, limit?)` | Operation progress, app state (desired state, runtime, release, data) or the list; never wakes an app. |
+| `ics_microapp_control(asset_id, action, expected_generation, idempotency_key?, confirm?)` | `enable`, `suspend`, `sleep`, `restart`; no data is deleted. Needs `app.control`. |
+| `ics_microapp_logs(asset_id, cursor?, limit?)` | Redacted application, publication and control logs. |
+| `ics_microapp_access(asset_id)` | The app's roles, every permission of the active release with its label and what it unlocks, who can open the app in which roles. Needs `app.access.manage`. |
+| `ics_microapp_access_set(asset_id, roles?, permissions?, user_email? \| project_id?, can_open?, confirm?)` | Sets exactly these roles (and single permissions) for a person or project and lets the person open the app, in one idempotent call. |
 
 **Read**
 
 | Tool | Purpose |
 |---|---|
-| `ics_asset_read(slug_or_id, path?, anchor?, lines?, encoding?, format?, max_lines?, version?)` | File content: a line range, one section by heading `anchor` (`ics://asset/<slug>#<anchor>` works too) or an older version. A PDF reads as Markdown with one `## Page N` section per page, a Word/ODF document as its converted Markdown. |
+| `ics_asset_read(slug_or_id, path?, anchor?, lines?, encoding?, format?, max_lines?, version?, cursor?)` | File content: a line range, one section by heading `anchor` (`ics://asset/<slug>#<anchor>` works too) or an older version. A PDF reads as Markdown with one `## Page N` section per page, a Word/ODF document as its converted Markdown, a micro-application as its own view with the records, then its data (`path='data/<collection>'` + `cursor` for more). |
 | `ics_asset_ocr(slug_or_id, request?)` | OCR state of a scanned PDF (queued, running, done, failed); `request=True` queues OCR of the current version or retries it. |
 | `ics_asset_read_rendered(slug_or_id, version?)` | Rendered HTML. Expensive; prefer `ics_asset_read`. |
 | `ics_asset_versions(slug_or_id)` | Version history with authors. |
@@ -324,7 +338,7 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | Tool | Purpose |
 |---|---|
 | `ics_doc_types()` | Document types for `doc_type`: key, label, agent hint, default review interval. |
-| `ics_asset_set_meta(slug_or_id, summary?, doc_type?, maintainer_email?, review_due_at?, language?, properties?)` | Change metadata without a new version; `""` clears a field. |
+| `ics_asset_set_meta(slug_or_id, summary?, doc_type?, maintainer_email?, review_due_at?, language?, properties?, project_id?)` | Change metadata without a new version, or move the asset to a project; `""` clears a field. |
 
 **Relation graph**
 
@@ -359,8 +373,8 @@ reads from disk (stdio only), which keeps large files out of the model's context
 
 | Tool | Purpose |
 |---|---|
-| `ics_share_create_link(slug_or_id, mode, password?, allowed_emails?, expires_at?, max_views?, confirm?)` | Create a link: `org_sso`, `password`, `public` or `magic_email`. `public` needs confirmation. |
-| `ics_share_grant_user(slug_or_id, email, role)` | Grant a user `editor` or `viewer` access. |
+| `ics_share_create_link(slug_or_id, mode, password?, allowed_emails?, expires_at?, max_views?, app_roles?, app_permissions?, confirm?)` | Create a link: `org_sso`, `password`, `public` or `magic_email`. `public` needs confirmation. A micro-application link names the app roles it gives. |
+| `ics_share_grant_user(slug_or_id, email, role)` | Grant a user `editor` or `viewer` access. For a micro-application this only opens it; give app roles with `ics_microapp_access_set`. |
 | `ics_share_revoke(share_id? \| slug_or_id + user_id, confirm?)` | Disable a share link or revoke a user grant permanently. Destructive. |
 
 </details>

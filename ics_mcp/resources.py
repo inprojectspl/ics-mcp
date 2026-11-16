@@ -10,6 +10,7 @@ from fastmcp import FastMCP
 from ics_mcp._payload import maybe_truncate
 from ics_mcp._runtime import runtime
 from ics_mcp.ics_ref import IcsRef, parse_version
+from ics_mcp.tools import micro_applications
 
 # Kinds whose resource view inlines the entry content (file-mcp returns the
 # converted Markdown for pdf_doc/office_doc).
@@ -20,6 +21,11 @@ async def _asset_view(ref: IcsRef) -> dict[str, Any]:
     ics = runtime.require_ics()
     meta = await ics.get_json(f"/api/assets/by-slug/{ref.slug}/meta")
     params = {"version": ref.version} if ref.version else None
+    if meta["kind"] == "micro_application":
+        # The app as it runs now, as the reader sees it (no outline, no
+        # archived content: its versions are packages).
+        doc = await micro_applications.fetch_document(meta["id"])
+        return {**meta, "content": doc.get("markdown")}
     if meta["kind"] in _INLINE_KINDS:
         file = await ics.get_json(f"/api/assets/by-slug/{ref.slug}/file-mcp", params=params)
         view = {**meta, "content": file.get("content")}
