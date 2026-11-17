@@ -688,3 +688,27 @@ async def test_long_version_history_comes_in_pages(real_client, respx_mock, make
         offset = page["next_offset"]
 
     assert seen == list(range(120, 0, -1))
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_project_create(real_client, respx_mock, make_mcp):
+    from ics_mcp.tools import projects
+
+    mcp = make_mcp(projects)
+    route = respx_mock.post(f"{ICS}/api/projects").mock(
+        return_value=httpx.Response(
+            201, json={"id": "p-id", "slug": "abc", "name": "Launch", "my_role": "owner"}
+        )
+    )
+    payload = await call_tool(
+        mcp, "ics_project_create", {"name": "Launch", "description": "Q1 launch docs"}
+    )
+    assert json.loads(route.calls[0].request.content) == {
+        "name": "Launch",
+        "description": "Q1 launch docs",
+    }
+    assert payload["slug"] == "abc"
+    assert payload["my_role"] == "owner"
+    await call_tool(mcp, "ics_project_create", {"name": "Bare"})
+    assert json.loads(route.calls[1].request.content) == {"name": "Bare"}

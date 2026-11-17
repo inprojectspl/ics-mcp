@@ -43,6 +43,8 @@
   ICS still builds it the answer is `status: building` with a hint: read
   the file directly with `ics_asset_read` instead of waiting in a loop.
 - `ics_projects_list`, `ics_shares_list`.
+- `ics_project_create(name, description?)`: a new project owned by the caller
+  (not idempotent: after a lost response check `ics_projects_list`).
 
 ## Read
 - `ics_asset_read`: content of one file (details below).

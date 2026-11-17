@@ -76,7 +76,7 @@ ics_share_create_link(slug_or_id=asset_id, mode="public", app_roles=["voter"])  
 
 ```
 ics_projects_list()                          # find the target project
-# Create the project manually in the UI or via the API.
+ics_project_create(name="Architecture")      # or make a new one: returns its id
 ics_asset_create_collection(
     title="Vault: Architecture",
     project_id="<uuid>",
