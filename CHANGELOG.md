@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ics_project_create` (name, optional description) creates an ICS project owned by the caller, so an agent
+  can set up a project before putting documents in it.
 - Micro-applications (ICS `ics.microapp/v1alpha1`, PoC): `ics_microapp_contract` (the build standard
   in sections with one `contract_hash`), `ics_microapp_plan` (checks a complete package and binds it
   to a digest), `ics_microapp_apply` (idempotent, returns a durable `operation_id`),

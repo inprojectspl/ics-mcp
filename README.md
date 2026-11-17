@@ -236,6 +236,7 @@ uv run python scripts/check_remote.py \
 |---|---|
 | Session and help | `ics_help`, `ics_whoami`, `ics_session_set_mode`, `ics_session_status` |
 | Discovery | `ics_assets_list`, `ics_assets_search`, `ics_asset_meta`, `ics_asset_list_files`, `ics_asset_outline`, `ics_projects_list`, `ics_shares_list` |
+| Projects | `ics_project_create` |
 | Read | `ics_asset_read`, `ics_asset_ocr`, `ics_asset_read_rendered`, `ics_asset_versions`, `ics_asset_diff`, `ics_share_resolve`, `ics_publication_get` |
 | Write Markdown | `ics_asset_create_md`, `ics_asset_create_collection`, `ics_asset_rename`, `ics_asset_update_content`, `ics_asset_add_file`, `ics_asset_create_empty_file`, `ics_asset_move_file`, `ics_asset_delete_file`, `ics_asset_delete`, `ics_asset_undelete`, `ics_asset_pin`, `ics_asset_set_tags` |
 | HTML bundles | `ics_asset_create_html`, `ics_asset_html_replace_bundle`, `ics_asset_html_security_review` |
@@ -274,6 +275,7 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | `ics_asset_list_files(slug_or_id, version?)` | Files of a collection or bundle, optionally of an older version; a micro-application's package (publishers only). |
 | `ics_asset_outline(slug_or_id, wait?, edges?, max_level?, offset?)` | Structure (headings with `line`, `end_line` and `anchor`, files, wikilink graph) without content; outgoing relations with `edges=true`. |
 | `ics_projects_list()` | Projects visible to the user. |
+| `ics_project_create(name, description?)` | New project owned by the user. Not idempotent. |
 | `ics_shares_list(slug_or_id)` | Share links and user grants of a document. |
 
 **Micro-applications** (ICS `ics.microapp/v1alpha1`, needs ICS with micro-applications enabled)
