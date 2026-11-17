@@ -317,6 +317,10 @@ from the contract (`ics_microapp_contract`), plans it (`ics_microapp_plan`) and 
 using the app (`app_changes`). Then it gives people the app's roles with `ics_microapp_access_set`:
 an ICS role on the asset only opens the app, it gives nothing inside it.
 
+The app opens at a short address such as `https://k7m2q9x4.example.net/` (`app_url` in
+`ics_microapp_status`), which it keeps for good. Apps published before the short addresses still
+open at their long `a-...-prod` address too; there people sign in separately.
+
 ### Hand an app out
 
 > "Give Priya the employee role and make a public link where people can only file requests."

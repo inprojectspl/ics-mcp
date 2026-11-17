@@ -66,6 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Micro-applications run on short addresses (`https://<8-character name>.<apps host>/`, ICS
+  ADR-0028). The help, the guide and the contract fixtures describe them; tools pass `app_url` and
+  `app_url_pattern` from ICS unchanged.
+
 - Creating a document with `share_mode="public"` (`ics_asset_create_md`, `ics_asset_create_collection`,
   `ics_asset_create_html`, `ics_asset_create_document`) goes through the same confirmation gate as
   `ics_share_create_link(mode="public")`; the four tools take a `confirm` argument.

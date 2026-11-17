@@ -26,7 +26,7 @@ def contract(schema_chars: int = 30_000) -> dict[str, Any]:
         "profile": "js-capabilities-v1",
         "sdk_version": "1.0",
         "contract_hash": "sha256:abc",
-        "app_url_pattern": "https://a-<hex>-prod.apps.example/",
+        "app_url_pattern": "https://<8-character app name>.apps.example/",
         "sections": {
             "manifest_schema": {"description": "x" * schema_chars},
             "procedure": ["plan", "apply"],
@@ -164,7 +164,7 @@ async def test_status_list_is_compact(real_client, respx_mock, make_mcp):
         "active_release": {"id": "r1"},
         "package_version": 2,
         "generation": 4,
-        "app_url": "https://a/",
+        "app_url": "https://k7m2q9x4.apps.example/",
         "rights": {},
     }
     respx_mock.get(BASE).mock(return_value=httpx.Response(200, json={"items": [item], "total": 1}))
@@ -179,7 +179,7 @@ async def test_status_list_is_compact(real_client, respx_mock, make_mcp):
             "release": "r1",
             "package_version": 2,
             "generation": 4,
-            "app_url": "https://a/",
+            "app_url": "https://k7m2q9x4.apps.example/",
         }
     ]
 
