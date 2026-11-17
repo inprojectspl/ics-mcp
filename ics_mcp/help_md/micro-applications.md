@@ -4,8 +4,12 @@ A `micro_application` asset is a small web app with its own data: a static
 UI (`public/`), a declared data model with generic CRUD and optional
 JavaScript handlers (`handlers/*.mjs`) for rules CRUD cannot express. ICS
 runs every app on one shared runtime, on its own origin
-`https://a-<asset id hex>-prod.<apps host>/`; nothing runs while an app is
-not used.
+`https://<name>.<apps host>/`, where `name` is 8 random characters the app
+keeps for good; nothing runs while an app is not used. Give people the
+`app_url` ICS returns, never an address built by hand. Apps published before
+the short names also keep their long `https://a-<asset id hex>-prod.<apps host>/`
+address; it opens the same app, but the browser treats it as another site
+(separate sign-in and storage).
 
 **When to build one**: the user wants something people *use* and that
 *keeps data* (a request register, a booking sheet, a poll, a game with a
