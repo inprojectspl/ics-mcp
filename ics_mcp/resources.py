@@ -23,14 +23,14 @@ async def _asset_view(ref: IcsRef) -> dict[str, Any]:
     params = {"version": ref.version} if ref.version else None
     if meta["kind"] == "micro_application":
         # The app as it runs now, as the reader sees it (no outline, no
-        # archived content: its versions are packages).
+        # earlier content: its versions are packages).
         doc = await micro_applications.fetch_document(meta["id"])
         return {**meta, "content": doc.get("markdown")}
     if meta["kind"] in _INLINE_KINDS:
         file = await ics.get_json(f"/api/assets/by-slug/{ref.slug}/file-mcp", params=params)
         view = {**meta, "content": file.get("content")}
     elif ref.version:
-        # The outline always describes the current version, so an archived
+        # The outline always describes the current version, so an earlier
         # version is shown by its own file tree instead.
         files = await ics.get_json(f"/api/assets/by-slug/{ref.slug}/files-mcp", params=params)
         view = {**meta, "files": maybe_truncate(files)}
@@ -67,7 +67,7 @@ def register(mcp: FastMCP) -> None:
     # unversioned handlers only see plain slugs.
     @mcp.resource("ics://asset/{slug}@v{version}")
     async def asset_version_resource(slug: str, version: str) -> dict[str, Any]:
-        """Like `ics://asset/{slug}`, but for an archived version (read-only,
+        """Like `ics://asset/{slug}`, but for an earlier version (read-only,
         nothing is restored). md_single/pdf_doc/office_doc inline that version's
         content; md_collection/html_bundle list that version's files (the outline
         only describes the current version). Version numbers come from
@@ -76,7 +76,7 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.resource("ics://asset/{slug}@v{version}/file/{path}")
     async def asset_version_file_resource(slug: str, version: str, path: str) -> str:
-        """Raw content of a file in an archived version of an `md_collection` or
+        """Raw content of a file in an earlier version of an `md_collection` or
         `html_bundle`. Same rules as `ics://asset/{slug}/file/{path}`; for a
         partial read use `ics_asset_read(slug, path, lines='N-M', version=N)`."""
         return await _file_content(IcsRef(slug=slug, version=parse_version(version), path=path))

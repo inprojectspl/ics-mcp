@@ -15,7 +15,8 @@ one for interactive work and for unattended agents.
 | Make an old version current | `ics_asset_restore_version` |
 | Move or rename a file in a collection | `ics_asset_move_file` |
 | Delete a file from a collection or bundle | `ics_asset_delete_file` |
-| Delete a document (soft delete) | `ics_asset_delete` |
+| Move a document to the trash | `ics_asset_delete` |
+| Delete a document from the trash for good | `ics_asset_purge` |
 | Create a `public` share link | `ics_share_create_link` with mode `public` |
 | Create a document with a `public` link | `ics_asset_create_md`, `ics_asset_create_collection`, `ics_asset_create_html` or `ics_asset_create_document` with `share_mode` `public` |
 | Revoke a share link or a user's access | `ics_share_revoke` |
@@ -111,8 +112,8 @@ it on by itself:
 ## Other things that keep your documents safe
 
 - **Changes are reversible.** Every content change creates a new version, and
-  `ics_asset_restore_version` brings an old one back. A deleted document can be restored with
-  `ics_asset_undelete` (its share links are not restored). Revoking a share is the one gated
+  `ics_asset_restore_version` brings an old one back. A deleted document waits in the trash and
+  can be restored with `ics_asset_undelete` (its share links are not restored). Revoking a share is the one gated
   operation that cannot be undone; create a new link instead.
 - **The assistant only has your permissions.** See [Overview](overview.md#how-the-assistant-acts-as-you).
   Remember that an ICS administrator account carries administrator reach into the assistant too.

@@ -57,7 +57,7 @@ Codes that come from ICS itself are passed through unchanged; the complete list 
 | `anchor_not_found` | The heading anchor does not exist in the current version. The hint lists the known anchors. | Pick one from the hint or from `ics_asset_outline`. |
 | `outline_building` | ICS is still building the outline of a new version. | Read the file directly, or try again in a few seconds. |
 | `binary_file` | An image, font or other binary file was read as text. | Usually not needed; if it is, read it with `encoding="base64"` (up to 1 MB). |
-| `id_required` | `ics_asset_undelete` got a slug. Deleted documents can be restored only by their UUID. | Use the id from an earlier response (for example from `ics_assets_list` with `detail="full"` before the deletion). |
+| `id_required` | `ics_asset_undelete` or `ics_asset_purge` got a slug. Documents in the trash are addressed only by their UUID. | Take the id from `ics_trash_list`. |
 
 ## Writing and uploading
 

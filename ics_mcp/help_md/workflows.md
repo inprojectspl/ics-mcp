@@ -85,6 +85,18 @@ ics_asset_create_collection(
 )
 ```
 
+## Tidy up: archive, trash and back
+
+```
+ics_asset_archive("q3-plan")                         # off lists and search, links keep working
+ics_assets_list(archive="archived", project_id=P)    # the project's archive
+ics_asset_archive("q3-plan", archived=false)         # back among the active ones
+ics_asset_delete("draft-old")                        # to the trash (asks first)
+ics_trash_list(project_id=P)                         # id, deleted_by, purge_at
+ics_asset_undelete("<id>")                           # back, without links and shares
+ics_asset_purge("<id>")                              # for good (asks first)
+```
+
 ## Agent in batch mode (yolo)
 
 ```

@@ -6,6 +6,7 @@ from fastmcp import FastMCP
 
 from ics_mcp.tools import (
     discovery,
+    lifecycle,
     metadata,
     micro_app_access,
     micro_applications,
@@ -33,6 +34,7 @@ def register_all(mcp: FastMCP) -> None:
     read.register(mcp)
     ocr.register(mcp)
     write_md.register(mcp)
+    lifecycle.register(mcp)
     write_html.register(mcp)
     write_documents.register(mcp)
     write_versions.register(mcp)

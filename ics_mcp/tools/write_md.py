@@ -1,4 +1,4 @@
-"""Markdown writes: create, rename, content edit, file ops, pin, tags, delete.
+"""Markdown writes: create, rename, content edit, file ops, pin, tags.
 The multipart create endpoints take only files and `share_mode`, so title and
 project are applied by follow-up calls, each wrapped in `_after_create_step`
 so a failure there does not lose the created asset."""
@@ -16,7 +16,6 @@ from ics_mcp._helpers import (
     guarded,
     invalidate_slug_cache,
     map_ics_errors,
-    require_uuid,
     resolve_id,
 )
 from ics_mcp._runtime import runtime
@@ -392,40 +391,6 @@ def register(mcp: FastMCP) -> None:
         )
         invalidate_slug_cache(ctx, slug_or_id)
         return result
-
-    @mcp.tool(
-        name="ics_asset_delete",
-        title="Delete an asset (soft delete)",
-        description="Soft delete. Can be undone via `ics_asset_undelete`.",
-        annotations=DESTRUCTIVE,
-    )
-    @guarded("delete_asset", target=lambda slug_or_id, **_: slug_or_id)
-    @map_ics_errors
-    async def ics_asset_delete(
-        ctx: Context, slug_or_id: str, confirm: M.ConfirmFlag = None
-    ) -> dict[str, Any]:
-        asset_id, meta = await resolve_id(slug_or_id)
-        await runtime.require_ics().delete_json(f"/api/assets/{asset_id}")
-        invalidate_slug_cache(ctx, slug_or_id)
-        return {"id": asset_id, "slug": meta["slug"], "deleted": True}
-
-    @mcp.tool(
-        name="ics_asset_undelete",
-        title="Restore a deleted asset",
-        description=(
-            "Undoes a soft delete. Requires the asset UUID (slug lookup does not work for "
-            "deleted assets). Share links are not restored."
-        ),
-        annotations=MUTATING_IDEMP,
-    )
-    @map_ics_errors
-    async def ics_asset_undelete(asset_id: str) -> dict[str, Any]:
-        require_uuid(
-            asset_id,
-            code="id_required",
-            hint="Use the UUID from the audit log or an earlier output.",
-        )
-        return await runtime.require_ics().post_json(f"/api/assets/{asset_id}/undelete")
 
     @mcp.tool(
         name="ics_asset_pin",

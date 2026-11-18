@@ -27,6 +27,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Archive and trash (ICS ADR-0029). `ics_asset_archive` (`archived=false` brings a document
+  back) takes a document off lists and search while its links keep working; `ics_assets_list`
+  and `ics_assets_search` take `archive` (`active` by default, `archived`, `all`) and mark items
+  `archived`. `ics_trash_list` shows the trash with `deleted_by` and `purge_at`;
+  `ics_asset_purge` deletes from the trash for good (destructive, asks first). Needs ICS with the
+  archive and trash.
 - `ics_project_create` (name, optional description) creates an ICS project owned by the caller, so an agent
   can set up a project before putting documents in it.
 - Micro-applications (ICS `ics.microapp/v1alpha1`, PoC): `ics_microapp_contract` (the build standard
@@ -44,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and keeps them when a long file list is cut. `ics_microapp_plan` takes `change_note`.
   `ics_asset_read` and `ics_asset_list_files` show a micro-application's package through the
   ICS author route, which only publishers may open; the `ics://asset/<slug>` resource reads the
-  app itself. Generic tools that cannot serve an app (outline, rendered read, an archived
+  app itself. Generic tools that cannot serve an app (outline, rendered read, an earlier
   version without `path`, writes) answer with a hint to the right tool. Needs ICS with
   micro-applications enabled.
 - A ChatGPT connection guide covering remote MCP, OAuth discovery, Google Workspace sign-in,
@@ -68,6 +74,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `ics_asset_delete` moves a document to the trash and `ics_asset_undelete` takes it back out;
+  their descriptions point to `ics_trash_list`. Descriptions say "earlier version" instead of
+  "archived version", which now means the archive of documents.
 - Micro-applications run on short addresses (`https://<8-character name>.<apps host>/`, ICS
   ADR-0028). The help, the guide and the contract fixtures describe them; tools pass `app_url` and
   `app_url_pattern` from ICS unchanged.

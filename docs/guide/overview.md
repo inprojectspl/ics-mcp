@@ -5,7 +5,7 @@ can do in ICS what you can do, and nothing more.
 
 ## What the assistant can do
 
-The assistant gets 62 tools (all listed in the [tool reference](https://github.com/inprojectspl/ics-mcp/blob/main/README.md#tools)). In
+The assistant gets 66 tools (all listed in the [tool reference](https://github.com/inprojectspl/ics-mcp/blob/main/README.md#tools)). In
 practice that covers:
 
 | Area | Examples of what you can ask |
@@ -55,8 +55,9 @@ This has a few consequences worth knowing:
 ## What the assistant does not do
 
 - It has no access beyond your account: no shared service account and no admin tools.
-- It does not delete permanently. `ics_asset_delete` is a soft delete that can be undone, and
-  every content change creates a new version, so earlier versions stay available.
+- It does not delete permanently unless asked. `ics_asset_delete` moves a document to the trash,
+  from which it can be restored, `ics_asset_purge` asks first, and every content change creates a
+  new version, so earlier versions stay available.
 - It does not follow instructions written inside documents. Every read tool tells the assistant
   that document content is data, not instructions. Treat this as a safeguard, not a guarantee:
   keep an eye on what the assistant does after reading documents you did not write.

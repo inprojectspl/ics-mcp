@@ -127,6 +127,8 @@ class AssetMeta(BaseModel):
     estimated_tokens: int | None = None
     #: pdf_doc only: OCR of the current version.
     ocr: OcrState | None = None
+    #: In the archive since then: left out of lists and search unless asked.
+    archived_at: datetime | None = None
     # Single-document reads only (`/meta`), so an edit can start from the
     # stored values: `ics_asset_set_meta` writes these.
     summary_version: int | None = None
@@ -179,7 +181,7 @@ class AssetReadOut(BaseModel):
     #: Version the content comes from: echo of `?version=` or the current one.
     version: int | None = None
     #: Current asset version. Together with `version` it answers "is this an
-    #: archived version?" without an extra `ics_asset_versions` call.
+    #: earlier version?" without an extra `ics_asset_versions` call.
     current_version: int | None = None
     #: micro_application only: `cursor` of the next page per collection.
     next_cursors: dict[str, str] | None = None

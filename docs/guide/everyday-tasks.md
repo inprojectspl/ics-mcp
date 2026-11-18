@@ -185,14 +185,18 @@ Two optional arguments make writes safe to repeat:
   `ics_publication_get` reads what happened. The assistant never invents a key and never
   repeats such a write on its own after a network failure.
 
-### Delete and restore
+### Archive, delete and restore
 
+> "Archive last year's planning notes."
 > "Delete the old draft of the release notes."
+> "What is in the trash of the Alpha project?"
 
-`ics_asset_delete` is a soft delete and asks for confirmation. `ics_asset_undelete` restores the
-document, but it needs the document's UUID (a slug does not resolve for deleted documents), and
-share links are not restored. If you may want a document back, ask the assistant to note its id
-before deleting it.
+`ics_asset_archive` takes a document off lists and search; its links and shares keep working,
+and `ics_assets_list(archive="archived")` finds it again. `ics_asset_delete` moves a document to
+the trash and asks for confirmation. `ics_trash_list` shows the trash with each document's id and
+the date it goes for good (30 days after deletion by default); `ics_asset_undelete` brings one
+back, without its share links and per-person shares. `ics_asset_purge` deletes from the trash for
+good and asks first.
 
 ## Versions and diffs
 

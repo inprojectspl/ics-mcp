@@ -16,6 +16,7 @@ from fastmcp.exceptions import ToolError, ValidationError
 
 from ics_mcp.tools import (
     discovery,
+    lifecycle,
     read,
     share,
     write_html,
@@ -567,7 +568,7 @@ async def test_set_tags_normalizes_and_dedupes(real_client, respx_mock, make_mcp
 @respx.mock(assert_all_called=False)
 async def test_delete_dry_run_returns_preview_no_request(real_client, respx_mock, make_mcp):
     """dry_run mode skips the network call entirely."""
-    mcp = make_mcp(session_tool, write_md)
+    mcp = make_mcp(session_tool, write_md, lifecycle)
     await call_tool(mcp, "ics_session_set_mode", {"mode": "dry_run"})
     payload = await call_tool(mcp, "ics_asset_delete", {"slug_or_id": "abc"})
     assert payload["action"] == "delete_asset"
@@ -577,7 +578,7 @@ async def test_delete_dry_run_returns_preview_no_request(real_client, respx_mock
 @pytest.mark.asyncio
 @respx.mock(assert_all_called=False)
 async def test_delete_yolo_actually_calls_delete(real_client, respx_mock, make_mcp):
-    mcp = make_mcp(session_tool, write_md)
+    mcp = make_mcp(session_tool, write_md, lifecycle)
     await call_tool(mcp, "ics_session_set_mode", {"mode": "yolo"})
     mock_resolve(respx_mock)
     route = respx_mock.delete(f"{ICS}/api/assets/{ASSET_ID}").mock(return_value=httpx.Response(204))
@@ -591,7 +592,7 @@ async def test_delete_yolo_actually_calls_delete(real_client, respx_mock, make_m
 async def test_delete_confirm_true_overrides_interactive_mode(real_client, respx_mock, make_mcp):
     """Per-call `confirm=True` must pass schema validation and
     execute in the default interactive mode: no elicitation, no yolo."""
-    mcp = make_mcp(write_md)
+    mcp = make_mcp(write_md, lifecycle)
     mock_resolve(respx_mock)
     route = respx_mock.delete(f"{ICS}/api/assets/{ASSET_ID}").mock(return_value=httpx.Response(204))
     payload = await call_tool(mcp, "ics_asset_delete", {"slug_or_id": "abc", "confirm": True})
@@ -603,7 +604,7 @@ async def test_delete_confirm_true_overrides_interactive_mode(real_client, respx
 @respx.mock(assert_all_called=False)
 async def test_delete_confirm_false_raises_confirm_required(real_client, respx_mock, make_mcp):
     """Explicit refusal: structured ToolError, no network call."""
-    mcp = make_mcp(write_md)
+    mcp = make_mcp(write_md, lifecycle)
     route = respx_mock.delete(f"{ICS}/api/assets/{ASSET_ID}").mock(return_value=httpx.Response(204))
     with pytest.raises(ToolError) as exc:
         await call_tool(mcp, "ics_asset_delete", {"slug_or_id": "abc", "confirm": False})
@@ -618,7 +619,7 @@ async def test_delete_interactive_without_elicitation_hints_confirm(
 ):
     """Client without elicitation capability in interactive mode gets an
     actionable error pointing at the per-call override, not a crash."""
-    mcp = make_mcp(write_md)
+    mcp = make_mcp(write_md, lifecycle)
     with pytest.raises(ToolError) as exc:
         await call_tool(mcp, "ics_asset_delete", {"slug_or_id": "abc"})
     msg = str(exc.value)
