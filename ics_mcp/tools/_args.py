@@ -13,6 +13,6 @@ VersionArg = Annotated[
     int | None,
     Field(
         ge=1,
-        description="Archived version to read (from `ics_asset_versions`); omit for the current one.",
+        description="Earlier version to read (from `ics_asset_versions`); omit for the current one.",
     ),
 ]

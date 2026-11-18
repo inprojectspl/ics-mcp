@@ -76,6 +76,7 @@ async def test_destructive_tools_flagged():
     by_name = {t.name: t for t in tools}
     destructive_expected = {
         "ics_asset_delete",
+        "ics_asset_purge",
         "ics_asset_delete_file",
         "ics_asset_update_content",
         "ics_asset_html_replace_bundle",
@@ -125,6 +126,7 @@ async def test_readonly_tools_flagged():
     by_name = {t.name: t for t in tools}
     ro_expected = {
         "ics_whoami",
+        "ics_trash_list",
         "ics_assets_list",
         "ics_assets_search",
         "ics_asset_meta",

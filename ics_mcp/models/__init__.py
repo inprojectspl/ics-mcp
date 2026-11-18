@@ -21,6 +21,7 @@ from ics_mcp.models.assets import (
     successor_slug,
 )
 from ics_mcp.models.vocab import (
+    ArchiveView,
     AssetKind,
     AssetRole,
     ChangeNoteArg,
@@ -67,6 +68,7 @@ from ics_mcp.models.writes import (
 )
 
 __all__ = [
+    "ArchiveView",
     "AssetFileEntry",
     "AssetFilesOut",
     "AssetKind",

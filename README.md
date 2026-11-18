@@ -20,7 +20,7 @@ sharing team documents.
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white)](./pyproject.toml)
 [![MCP 2025-11-25](https://img.shields.io/badge/MCP-2025--11--25-ff5500?style=flat-square)](https://modelcontextprotocol.io/specification/2025-11-25)
 [![FastMCP 3](https://img.shields.io/badge/FastMCP-3.x-111827?style=flat-square)](https://gofastmcp.com)
-[![62 tools](https://img.shields.io/badge/tools-62-059669?style=flat-square)](#tools)
+[![66 tools](https://img.shields.io/badge/tools-66-059669?style=flat-square)](#tools)
 
 [User guide](https://inprojectspl.github.io/ics-mcp/) ·
 [Quick start](#quick-start) ·
@@ -46,7 +46,7 @@ sharing team documents.
 - **Acts as you, never more.** Every tool call is a request to the ICS user-level API with the
   signed-in user's OAuth token. No shared service account and no administration tools; an
   administrator's token still carries that administrator's access.
-- **62 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
+- **66 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
   Word documents, versions, sharing, the relation graph and task context.
 - **Safe destructive operations.** Deletes and overwrites go through a confirmation gate:
   interactive elicitation, scripted `yolo` (only when the operator allows it) or `dry_run`.
@@ -227,9 +227,10 @@ uv run python scripts/check_remote.py \
 
 ## Tools
 
-62 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
+66 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
 `idempotentHint`, `openWorldHint`) and returns structured content. Documents are addressed by
-`slug_or_id` (a slug or a UUID), except `ics_asset_undelete`, which needs the UUID.
+`slug_or_id` (a slug or a UUID), except `ics_asset_undelete` and `ics_asset_purge`, which work on
+the trash and need the UUID from `ics_trash_list`.
 `ics_help` returns longer guides to the assistant.
 
 | Group | Tools |
@@ -238,7 +239,8 @@ uv run python scripts/check_remote.py \
 | Discovery | `ics_assets_list`, `ics_assets_search`, `ics_asset_meta`, `ics_asset_list_files`, `ics_asset_outline`, `ics_projects_list`, `ics_shares_list` |
 | Projects | `ics_project_create` |
 | Read | `ics_asset_read`, `ics_asset_ocr`, `ics_asset_read_rendered`, `ics_asset_versions`, `ics_asset_diff`, `ics_share_resolve`, `ics_publication_get` |
-| Write Markdown | `ics_asset_create_md`, `ics_asset_create_collection`, `ics_asset_rename`, `ics_asset_update_content`, `ics_asset_add_file`, `ics_asset_create_empty_file`, `ics_asset_move_file`, `ics_asset_delete_file`, `ics_asset_delete`, `ics_asset_undelete`, `ics_asset_pin`, `ics_asset_set_tags` |
+| Write Markdown | `ics_asset_create_md`, `ics_asset_create_collection`, `ics_asset_rename`, `ics_asset_update_content`, `ics_asset_add_file`, `ics_asset_create_empty_file`, `ics_asset_move_file`, `ics_asset_delete_file`, `ics_asset_pin`, `ics_asset_set_tags` |
+| Archive and trash | `ics_asset_archive`, `ics_asset_delete`, `ics_trash_list`, `ics_asset_undelete`, `ics_asset_purge` |
 | HTML bundles | `ics_asset_create_html`, `ics_asset_html_replace_bundle`, `ics_asset_html_security_review` |
 | PDF and Word | `ics_asset_create_document`, `ics_asset_replace_document` |
 | Metadata | `ics_doc_types`, `ics_asset_set_meta` |
@@ -315,10 +317,18 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | `ics_asset_create_empty_file(slug_or_id, path, change_note?)` | Add an empty file to a collection. |
 | `ics_asset_move_file(slug_or_id, from_path, to_path, confirm?)` | Move or rename a file in a collection. Destructive. |
 | `ics_asset_delete_file(slug_or_id, path, confirm?)` | Delete a file from a collection. Destructive. |
-| `ics_asset_delete(slug_or_id, confirm?)` | Soft-delete a document. Destructive. |
-| `ics_asset_undelete(asset_id)` | Restore a soft-deleted document (UUID only). Share links are not restored. |
 | `ics_asset_pin(slug_or_id, pinned?)` | Pin, or with `pinned=false` unpin. |
 | `ics_asset_set_tags(slug_or_id, tags)` | Replace the tag list. |
+
+**Archive and trash** (ICS ADR-0029; owner or project owner)
+
+| Tool | Purpose |
+|---|---|
+| `ics_asset_archive(slug_or_id, archived?)` | Into the archive: left out of lists and search (`archive=` in `ics_assets_list` and `ics_assets_search` shows it), still opens by link and share. `archived=false` brings it back. |
+| `ics_asset_delete(slug_or_id, confirm?)` | Move a document to the trash. Destructive. |
+| `ics_trash_list(project_id?, limit?, offset?)` | The trash: `id`, `deleted_at`, `deleted_by`, `purge_at`. |
+| `ics_asset_undelete(asset_id)` | Back from the trash (UUID only). Links and per-person shares are not restored. |
+| `ics_asset_purge(asset_id, confirm?)` | Delete from the trash for good. Destructive. |
 
 **Write: HTML bundles**
 
@@ -405,8 +415,8 @@ The per-call `confirm` argument always wins: `confirm=true` runs without asking,
 | `ics://asset/{slug}` | Metadata plus content (single Markdown) or outline (collection, bundle). |
 | `ics://asset/{slug}/outline` | The outline only. |
 | `ics://asset/{slug}/file/{path}` | One file of a collection as text. |
-| `ics://asset/{slug}@v{version}` | An archived version: its content or its file list. |
-| `ics://asset/{slug}@v{version}/file/{path}` | One file of an archived version as text. |
+| `ics://asset/{slug}@v{version}` | An earlier version: its content or its file list. |
+| `ics://asset/{slug}@v{version}/file/{path}` | One file of an earlier version as text. |
 | `ics://project/{slug}` | Project metadata and its documents. |
 
 | Prompt | Workflow |

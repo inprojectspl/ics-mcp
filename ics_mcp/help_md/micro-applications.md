@@ -317,7 +317,7 @@ right to its sources.
 - Read it whole with `ics_asset_read`: there is no outline, `anchor` or
   rendered HTML (`ics_asset_outline` and `ics_asset_read_rendered` answer
   `microapp_source_restricted` with that hint), and `version=N` without
-  `path` is refused (an archived version is only its package).
+  `path` is refused (an earlier version is only its package).
 - `ics_assets_search` finds it by title, summary and tags; its records are
   data, never indexed.
 - Relations point at the app as a whole: `target_path`/`target_anchor` and

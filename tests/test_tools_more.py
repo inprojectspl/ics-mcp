@@ -12,6 +12,7 @@ from fastmcp.exceptions import ToolError, ValidationError
 
 from ics_mcp.tools import (
     discovery,
+    lifecycle,
     read,
     share,
     write_md,
@@ -293,7 +294,7 @@ async def test_pin_unpin(real_client, respx_mock, make_mcp):
 @pytest.mark.asyncio
 @respx.mock(assert_all_called=False)
 async def test_undelete_with_valid_uuid(real_client, respx_mock, make_mcp):
-    mcp = make_mcp(write_md)
+    mcp = make_mcp(write_md, lifecycle)
     respx_mock.post(f"{ICS}/api/assets/{ASSET_ID}/undelete").mock(
         return_value=httpx.Response(200, json={"id": ASSET_ID, "deleted_at": None})
     )
@@ -303,7 +304,7 @@ async def test_undelete_with_valid_uuid(real_client, respx_mock, make_mcp):
 
 @pytest.mark.asyncio
 async def test_undelete_with_invalid_uuid_raises(make_mcp):
-    mcp = make_mcp(write_md)
+    mcp = make_mcp(write_md, lifecycle)
     with pytest.raises(ToolError) as exc:
         await call_tool(mcp, "ics_asset_undelete", {"asset_id": "not-uuid"})
     err = json.loads(str(exc.value))

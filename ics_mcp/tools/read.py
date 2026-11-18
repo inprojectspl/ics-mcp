@@ -53,7 +53,7 @@ def register(mcp: FastMCP) -> None:
             "- `anchor`: one section, from the heading's `line` to its `end_line` in "
             "`ics_asset_outline`; `slug_or_id` also takes "
             "`ics://asset/<slug>[/file/<path>][#<anchor>]`.\n"
-            "- `version`: an archived version.\n"
+            "- `version`: an earlier version.\n"
             "PDF and Word/ODF documents read as the Markdown ICS converted (a scan: "
             "`ocr_notice`), a micro-app as its own view with the records, then its "
             "data. A superseded document carries `superseded_by`, `latest` and a "
@@ -124,7 +124,7 @@ def register(mcp: FastMCP) -> None:
             if version:
                 raise ICSError(
                     "invalid_argument",
-                    "A micro-application reads as it runs now; an archived version has only "
+                    "A micro-application reads as it runs now; an earlier version has only "
                     "its package.",
                     hint="Pass path= (e.g. 'microapp.json') to read that version's package "
                     "file, or ics_asset_diff to compare versions.",

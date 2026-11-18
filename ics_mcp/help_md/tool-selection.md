@@ -83,6 +83,11 @@ should see it in their UI permanently".
 | Markdown without HTML comments (e.g. transcript timestamps) | `ics_asset_read(format="markdown")` |
 | A file from an `html_bundle` (source for editing) | `ics_asset_list_files` → `ics_asset_read(path=...)` |
 | Rendered HTML | `ics_asset_read_rendered` (expensive; prefer `read`) |
+| Done with a document, keep it out of the way | `ics_asset_archive` (lists and search skip it, links still work) |
+| Find an archived document | `ics_assets_list(archive="archived")` or `ics_assets_search(q, archive="all")` |
+| Remove a document | `ics_asset_delete` (to the trash, restorable) |
+| What was deleted, and bring it back | `ics_trash_list` → `ics_asset_undelete(id)` |
+| Delete for good now | `ics_asset_purge(id)` (only from the trash) |
 | Version history (who, when) | `ics_asset_versions` |
 | Diff between versions | `ics_asset_diff(v1=, v2=)`: without `path` a list of changes, with `path` the content (also for added/deleted files) |
 | Read the content of an old version (without changing the current one) | `ics_asset_read(version=)` |

@@ -1,6 +1,6 @@
 # Confirm: three modes
 
-Every destructive tool (`delete`, `revoke`, `restore`, `update_content`,
+Every destructive tool (`delete`, `purge`, `revoke`, `restore`, `update_content`,
 `move_file`, ...) checks the session mode and the `confirm` flag before it runs.
 So does publishing to anyone with the URL: `ics_share_create_link(mode="public")`
 and every create tool called with `share_mode="public"` (`ics_asset_create_md`,

@@ -60,6 +60,14 @@ ConfirmFlag = Annotated[
     ),
 ]
 
+# Which part of the archive a list or search covers (ICS ADR-0029).
+ArchiveView = Annotated[
+    Literal["active", "archived", "all"],
+    Field(
+        description="`active` (default) leaves the archive out, `archived` lists only it, `all` both."
+    ),
+]
+
 # Tag normalization: mirrors ICS-side `_TAG_RE` + `_MAX_TAGS` from
 # `routes/mcp_assets/_shared.py`. Validated locally so the error explaining
 # kebab-case reaches the agent before a round trip to ICS.
