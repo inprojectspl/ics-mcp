@@ -160,7 +160,7 @@ async def test_status_list_is_compact(real_client, respx_mock, make_mcp):
         "slug": "app1",
         "title": "App",
         "desired_state": "enabled",
-        "runtime": {"state": "sleeping", "x": "y" * 500},
+        "runtime": {"state": "running", "x": "y" * 500, "realtime": {"sockets": 5, "people": 3}},
         "active_release": {"id": "r1"},
         "package_version": 2,
         "generation": 4,
@@ -175,13 +175,27 @@ async def test_status_list_is_compact(real_client, respx_mock, make_mcp):
             "slug": "app1",
             "title": "App",
             "desired_state": "enabled",
-            "runtime": "sleeping",
+            "runtime": "running",
+            "live_people": 3,
             "release": "r1",
             "package_version": 2,
             "generation": 4,
             "app_url": "https://k7m2q9x4.apps.example/",
         }
     ]
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=True)
+async def test_status_of_one_app_keeps_the_live_counts(real_client, respx_mock, make_mcp):
+    runtime = {"state": "running", "fresh": True, "realtime": {"sockets": 5, "people": 3}}
+    respx_mock.get(f"{BASE}/{ASSET_ID}").mock(
+        return_value=httpx.Response(200, json={"asset_id": ASSET_ID, "runtime": runtime})
+    )
+    out = await call_tool(
+        make_mcp(micro_applications), "ics_microapp_status", {"asset_id": ASSET_ID}
+    )
+    assert out["runtime"]["realtime"] == {"sockets": 5, "people": 3}
 
 
 @pytest.mark.asyncio
