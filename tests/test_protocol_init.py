@@ -87,6 +87,8 @@ async def test_destructive_tools_flagged():
         "ics_relation_remove",
         "ics_task_unlink",
         "ics_project_links_set",
+        "ics_sheets_apply",
+        "ics_sheets_unlink",
     }
     for name in destructive_expected:
         assert name in by_name, name
@@ -138,6 +140,8 @@ async def test_readonly_tools_flagged():
         "ics_asset_diff",
         "ics_asset_html_security_review",
         "ics_projects_list",
+        "ics_sheets_status",
+        "ics_sheets_inspect",
         "ics_shares_list",
         "ics_help",
         "ics_session_status",

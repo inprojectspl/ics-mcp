@@ -27,6 +27,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Micro-applications built around a Google spreadsheet, and their sync (ICS ADR-0031):
+  `ics_sheets_inspect` reads a spreadsheet with the user's connected Google account (headers,
+  proposed field names and types, fill rate, uniqueness, samples), `ics_sheets_link` links an app's
+  collection to a tab without any id column in the sheet (rows match by an optional unique
+  `key_field` or by content), `ics_sheets_unlink` removes it (asks first), `ics_sheets_status`
+  shows the link, the owner's row limit and recent syncs (`check=True` settles an `uncertain` sheet
+  write by reading the cells back), `ics_sheets_preview` shows what a sync would change, with
+  conflicts keyed for decisions, and `ics_sheets_apply` applies a preview with the user's decisions
+  (asks first; after a 503 the same call resumes it). The only browser step is Google's consent:
+  errors that need it carry `connect_url`. `ics_sheets_link` turns on automatic sync by default for
+  an `owner_account` link: ICS keeps the app and the sheet in step on its own, and conflicts or
+  errors (`link.auto_error`) wait for the user. The `micro-applications` help topic explains the
+  flow and its retry rules. Needs ICS with Google Sheets links configured. Automatic sync follows
+  the app's activity (ICS ADR-0032), `ics_microapp_status` shows who uses an app now
+  (`runtime.realtime`, `live_people` in the list), and the help explains live updates and realtime
+  channels for app pages.
 - Archive and trash (ICS ADR-0029). `ics_asset_archive` (`archived=false` brings a document
   back) takes a document off lists and search while its links keep working; `ics_assets_list`
   and `ics_assets_search` take `archive` (`active` by default, `archived`, `all`) and mark items

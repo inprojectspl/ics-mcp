@@ -27,6 +27,8 @@ one for interactive work and for unattended agents.
 | Publish a micro-application release | `ics_microapp_apply` |
 | Enable, suspend, put to sleep or restart a micro-application | `ics_microapp_control` |
 | Set a person's or project's roles in a micro-application | `ics_microapp_access_set` |
+| Apply a sync between a micro-application and its Google Sheets tab | `ics_sheets_apply` |
+| Remove the Google Sheets link of a micro-application | `ics_sheets_unlink` |
 
 The question names the action and its target, for example the document slug, the file being
 moved, or both ends of a relation, so you can tell what you are approving.

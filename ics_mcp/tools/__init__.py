@@ -9,6 +9,7 @@ from ics_mcp.tools import (
     lifecycle,
     metadata,
     micro_app_access,
+    micro_app_sheets,
     micro_applications,
     ocr,
     projects,
@@ -45,5 +46,6 @@ def register_all(mcp: FastMCP) -> None:
     share.register(mcp)
     micro_applications.register(mcp)
     micro_app_access.register(mcp)
+    micro_app_sheets.register(mcp)
     mcp.add_transform(CompactCatalog())
     mcp.add_middleware(ArgumentErrors())

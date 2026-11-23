@@ -267,9 +267,10 @@ def register(mcp: FastMCP) -> None:
         description=(
             "Read-only state, never wakes an app. `operation_id`: one publication or control "
             "operation (poll until `terminal`). `asset_id`: desired state, active release, "
-            "package version, runtime (sleeping/ready/running/suspended, with sample time), "
-            "data size, rights and `generation` for control. Neither: the list of apps you "
-            "can see (`q`, `state`, `offset`, `limit`)."
+            "package version, runtime (sleeping/ready/running/suspended, with sample time; "
+            "`realtime`: open live pages and people using the app now), data size, rights "
+            "and `generation` for control. Neither: the list of apps you can see (`q`, "
+            "`state`, `offset`, `limit`), with `live_people` per app."
         ),
         annotations=RO_IDEMP,
     )
@@ -301,6 +302,7 @@ def register(mcp: FastMCP) -> None:
                 "title": i["title"],
                 "desired_state": i["desired_state"],
                 "runtime": i["runtime"]["state"],
+                "live_people": (i["runtime"].get("realtime") or {}).get("people", 0),
                 "release": (i.get("active_release") or {}).get("id"),
                 "package_version": i["package_version"],
                 "generation": i["generation"],

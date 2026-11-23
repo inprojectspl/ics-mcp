@@ -57,7 +57,11 @@ Primary stack:
   the `ics_microapp_*` adapters (contract, plan, apply, status, control,
   logs) over the ICS `/api/micro-applications` API, with argument models in
   `ics_mcp/models/micro_applications.py`; `micro_app_access.py` holds
-  `ics_microapp_access` and `ics_microapp_access_set` (who may use an app)
+  `ics_microapp_access` and `ics_microapp_access_set` (who may use an app);
+  `micro_app_sheets.py` holds `ics_sheets_inspect`, `ics_sheets_link`,
+  `ics_sheets_unlink`, `ics_sheets_status`, `ics_sheets_preview` and
+  `ics_sheets_apply` (an app built around a Google spreadsheet and its sync,
+  run by ICS)
 - `ics_mcp/resources.py`: MCP resources
 - `ics_mcp/prompts.py`: MCP prompts
 - `ics_mcp/auth/`: OAuth, token storage, JWT verification, refresh flow
