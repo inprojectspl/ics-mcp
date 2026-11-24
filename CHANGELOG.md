@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Google Sheets links per spreadsheet file (ICS ADR-0033). `ics_sheets_link` takes `mappings`, one per
+  collection: one tab, several tabs of one kind of record (a tab per month, state or team, with a
+  `key_field` unique across them, `append_to` for new records and an optional `tab_field`), or a list
+  the app only reads (every column owned by `sheet`); it states the whole link and takes
+  `expected_revision`. `ics_sheets_inspect` lists every tab with its `sheet_id` and headers, suggests
+  `groups` of tabs with the same headers, marks `formula` columns and takes a tab by name or id.
+  Previews name the `collection`, `tab` and `row` of every change, with values keyed by each
+  collection's headers. New hints for `sheet_sync_unsettled`, `key_field_required`,
+  `append_tab_required` and `sheet_tab_not_found`; the `micro-applications` help topic explains which
+  layout of a file maps to which link. Needs ICS with ADR-0033.
+
 ### Security
 
 - `ICS_MCP_MAX_UPLOAD_BYTES` and `ICS_MCP_MAX_UPLOAD_FILES` apply to every write: `ics_asset_create_html`

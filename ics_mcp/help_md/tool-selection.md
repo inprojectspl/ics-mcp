@@ -67,8 +67,8 @@ Many files at once = `new_version`. Do not push N separate
 | Let a colleague use a micro-application | `ics_microapp_access_set(asset_id, user_email=..., roles=[...])` |
 | Let a whole project use a micro-application | `ics_microapp_access_set(asset_id, project_id=..., roles=[...])` |
 | Who can do what in a micro-application | `ics_microapp_access(asset_id)` |
-| Build a micro-application around an existing Google spreadsheet | `ics_sheets_inspect` → `ics_microapp_contract`/`plan`/`apply` → `ics_sheets_link` → `ics_sheets_preview` → `ics_sheets_apply` (`ics_help('micro-applications')`) |
-| Sync a micro-application with its Google Sheets tab (or resolve a stopped automatic sync) | `ics_sheets_status` → `ics_sheets_preview` → `ics_sheets_apply` |
+| Build a micro-application around an existing Google spreadsheet (one tab, a tab per month or state, or tabs of different data) | `ics_sheets_inspect` → `ics_microapp_contract`/`plan`/`apply` → `ics_sheets_link` → `ics_sheets_preview` → `ics_sheets_apply` (`ics_help('micro-applications')`) |
+| Sync a micro-application with its Google spreadsheet (or resolve a stopped automatic sync) | `ics_sheets_status` → `ics_sheets_preview` → `ics_sheets_apply` |
 | A micro-application for people without an account | `ics_share_create_link(mode="public", app_roles=[...])` |
 
 **Rule**: a token link = "paste it somewhere". A per-user grant = "user X
