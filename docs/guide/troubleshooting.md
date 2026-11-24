@@ -109,6 +109,20 @@ Codes that come from ICS itself are passed through unchanged; the complete list 
 | `microapp_not_addressable` | A relation pointed at a file or heading inside an app. | Relate to the app as a whole. |
 | `app_permissions_invalid` | A share link named a role or permission the app does not define. `allowed_roles` and `allowed` list the valid ones. | Pick from the list. |
 
+## Google Sheets
+
+| Code | What it means | What to do |
+|---|---|---|
+| `google_not_connected`, `google_grant_invalid` | The Google account the sync needs is not connected to ICS, or its access was revoked. The error carries `connect_url`. | Open `connect_url` in the browser where you are signed in to ICS, accept, and ask again. |
+| `google_no_access`, `google_not_found` | The connected Google account cannot open the spreadsheet. | Share the file in Google with that account, then ask again. |
+| `google_office_file` | The address points at an Excel file kept on Drive. | Open it and choose *File > Save as Google Sheets*; give the assistant the new address. |
+| `sheet_headers_missing`, `sheet_headers_duplicate` | A linked header is missing from, or doubled in, the first row of the tab named in `tab`. | The assistant reads the tab again and fixes the link; you do not need to change the sheet. |
+| `sheet_tab_not_found` | A linked tab is gone from the file. | Tell the assistant whether it was renamed into another tab or removed; it fixes the link. |
+| `key_field_required`, `append_tab_required` | A collection over several tabs needs a column with values unique across them, and the tab new records go to. | The assistant picks them, asking you if the data does not tell. |
+| `sheet_sync_unsettled` | The sheet write of an earlier sync is not confirmed, so no new sync starts (a record could be added twice). | The assistant checks it (`ics_sheets_status` with `check`); a write younger than about 90 seconds needs a second check a moment later. |
+| `sheet_changed`, `app_changed` | The sheet or the app changed after the preview; nothing was written. | Preview again. |
+| `sheet_too_large`, `collection_too_large` | Over the app owner's row limit, all linked tabs together. | An ICS administrator raises the limit in the owner's settings. |
+
 ## Relations and tasks
 
 | Code | What it means | What to do |
