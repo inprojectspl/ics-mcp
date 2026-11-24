@@ -292,11 +292,11 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | `ics_microapp_logs(asset_id, cursor?, limit?)` | Redacted application, publication and control logs. |
 | `ics_microapp_access(asset_id)` | The app's roles, every permission of the active release with its label and what it unlocks, who can open the app in which roles. Needs `app.access.manage`. |
 | `ics_microapp_access_set(asset_id, roles?, permissions?, user_email? \| project_id?, can_open?, confirm?)` | Sets exactly these roles (and single permissions) for a person or project and lets the person open the app, in one idempotent call. |
-| `ics_sheets_inspect(spreadsheet, tab?)` | Reads a Google spreadsheet with your connected Google account: tabs, headers, a proposed field name and type per column, fill rate, uniqueness and samples, to build an app around the sheet as it is. |
-| `ics_sheets_link(slug_or_id, spreadsheet, tab, collection, columns, account_mode?, key_field?, paused?)` | Links an app's collection to a tab: each field to its header and owner side; rows are matched by `key_field` or by content, the sheet needs no id column. |
-| `ics_sheets_unlink(slug_or_id, confirm?)` | Removes the link; records and sheet stay, agreed values and sync history go. |
+| `ics_sheets_inspect(spreadsheet, tab?)` | Reads a Google spreadsheet with your connected Google account: every tab with its id and headers, groups of tabs with the same headers, and per column of one tab a proposed field name and type, fill rate, uniqueness, formulas and samples, to build an app around the file as it is. |
+| `ics_sheets_link(slug_or_id, spreadsheet, mappings, account_mode?, paused?, auto_sync?, expected_revision?)` | Links an app to a spreadsheet file: one mapping per collection, each with one tab or several tabs of one kind of record, every field to its header and owner side; rows are matched by `key_field` or by content, the sheet needs no id column. |
+| `ics_sheets_unlink(slug_or_id, confirm?)` | Removes the whole link; records and sheet stay, agreed values and sync history go. |
 | `ics_sheets_status(slug_or_id, operation_id?, check?)` | The app's Google Sheets link, account mode, your Google account and recent syncs; `check=True` settles an `uncertain` sheet write by reading the cells back. |
-| `ics_sheets_preview(slug_or_id)` | What a sync with the linked sheet would change: imports, exports, new rows, conflicts with their decision keys, skipped rows. |
+| `ics_sheets_preview(slug_or_id)` | What one sync of the linked file would change, each change with its collection, tab and row: imports, exports, new rows, conflicts with their decision keys, skipped rows. |
 | `ics_sheets_apply(slug_or_id, operation_id, decisions?, confirm?)` | Applies a preview of yours to the app and the sheet; after a 503 the same call resumes it. Needs `app.control`. |
 
 **Read**

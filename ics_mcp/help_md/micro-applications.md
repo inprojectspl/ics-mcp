@@ -338,82 +338,155 @@ can hold a role).
 
 ## Google Sheets
 
-An app's collection can be linked to one tab of a Google spreadsheet, so a
-team keeps typing in the sheet while the app keeps its rules. The link is
-optional and most apps have none: the manifest, handlers and UI never
-mention a sheet, the app works the same with or without one, and linking
-needs no new release. Do not add a sheet the user did not ask for.
+An app can be linked to one Google spreadsheet file, so a team keeps typing
+in the sheet while the app keeps its rules. The link is optional and most
+apps have none: the manifest, handlers and UI never mention a sheet, the
+app works the same with or without one, and linking collections the app
+already has needs no new release (a tab that needs a new collection does).
+Do not add a sheet the user did not ask for.
 
 Everything is done here, through MCP. The only browser step is Google's
 consent: when a tool answers `action: "connect_google"`, give the user
 `connect_url`; they open it signed in to ICS, accept once, and you call the
-tool again. Never ask the user to fill in a form, add an id column or
-rename headers: ICS reads the sheet as it is.
+tool again. Never ask the user to fill in a form, add an id column, rename
+headers or rearrange tabs: ICS reads the file as it is.
+
+### Which layout is which
+
+A link has one **mapping** per linked collection; a mapping takes one tab
+or several. Decide from the data (`samples`), not only from tab names:
+
+| The file has | Link it as |
+|---|---|
+| one tab of records | one mapping, one tab |
+| several tabs with the same columns, one kind of record split by month, year, state or team (`groups` in inspect suggests them) | one mapping with all those tabs, a `key_field` unique across them, `append_to` (the tab new records go to, usually the newest or the "open" one) and, if the split means something to the app, a `tab_field` that keeps the tab's name on each record |
+| tabs of different things used together (orders and customers, tasks and people) | one mapping per collection, all in the same link: one sync covers them in one app transaction and one sheet write |
+| a reference list the app only reads (customers, prices, categories) | its own collection, every column owned by `sheet`: the app never writes to those tabs, not even new rows |
+| a report, chart or summary tab | leave it unlinked; tabs no mapping names are never read |
+| a column computed by a formula | owner `sheet`, never `required`; the app shows the value the sheet computes |
+| several tables in one tab, merged headers, headers not in the first row | not supported: tell the user which tabs cannot be linked and why, link the others; the app can still hold that data without a sheet link |
+
+A tab belongs to one mapping only, and an app links one spreadsheet file
+(a file is linked to one app). Relations between collections stay as the
+sheet keeps them: a customer code in an order is a `string` field the app
+looks up in its handler, not a UUID reference.
 
 ### An app for a sheet the user already has
 
-1. `ics_sheets_inspect(spreadsheet_url)`: tabs, and per column the
-   `header`, a proposed `field` name, a `suggested` type, `filled` (how many
-   sampled rows have a value), `unique` and `samples`. Types come from the
-   first 200 rows; check them against the samples.
-2. Design the collection on those columns with `ics_microapp_contract` and
-   publish it as usual. Only `string`, `integer`, `decimal`, `boolean`,
+1. `ics_sheets_inspect(spreadsheet_url)`: every tab with its `sheet_id`,
+   `headers` and `grid_rows` (the grid's size, not a count of records),
+   `groups` of tabs that share headers, and for one tab (`tab=` name or
+   sheet_id, the first by default) per column the `header`, a proposed
+   `field` name, a `suggested` type, `filled`, `unique`, `formula` and
+   `samples`. Fill, types and uniqueness come from the first 200 rows; check
+   them against the samples. Inspect every tab you plan to map.
+2. Design the collections on those columns with `ics_microapp_contract` and
+   publish as usual. Only `string`, `integer`, `decimal`, `boolean`,
    `date`, `timestamptz`, `uuid` and `enum` fields can be linked. A field
    the sheet does not always fill is optional or has a `default` (a row
    lacking a required field without a default is skipped). App-only fields
-   (e.g. `status` with a default) need no column.
-3. `ics_sheets_link(app, spreadsheet, tab, collection, columns=[{field,
-   header, owner}], account_mode?, key_field?, auto_sync?)`, with each `header` exactly
-   as inspect returned it. Owners: `sheet` (typed in the sheet, flows into
-   the app), `app` (set by the app, flows into the sheet) or `both` (a cell
-   both sides changed is a conflict the user decides). A column of an app
-   field whose update rule forbids the change must be owned by `app`.
-   `key_field`: a linked field with `unique` values (a number, an e-mail)
-   matches rows to records best; without it rows are matched by content
+   (e.g. `status` with a default) need no column. Give a key field a
+   `unique` index, so two people cannot create the same number at once.
+3. `ics_sheets_link(app, spreadsheet, mappings=[{collection, tabs,
+   columns=[{field, header, owner}], key_field?, append_to?, tab_field?}],
+   account_mode?, auto_sync?, paused?)`, each `header` exactly as inspect
+   returned it.
+   The call states the whole link: when you change an existing link, send
+   every mapping (a collection left out is unlinked, its records stay) and
+   `expected_revision` from `ics_sheets_status`; `account_mode`,
+   `auto_sync` and `paused` left out keep their current values. Owners: `sheet` (typed in
+   the sheet, flows into the app), `app` (set by the app, flows into the
+   sheet) or `both` (a cell both sides changed is a conflict the user
+   decides). A field the sheet may change (`sheet` or `both`) must be in the
+   collection's `crud.update.writeFields` (when the rule lists them), or the
+   link answers `field_not_writable`; a field only a handler or capability
+   changes (e.g. a status a reviewer sets) is owned by `app`. `key_field`: a linked field with `unique` values
+   (a number, an e-mail) matches rows to records best and is required for
+   several tabs; with one tab and no key, rows are matched by content
    (wherever a row moved) and by the row it was last seen in, so sorting or
    inserting rows is fine, but a row both moved and heavily edited between
    syncs shows up as a removed record plus a new row.
-4. A sync acts as the person who runs it, under the app's rules: give them
-   (the owner too) a role that lists, creates and updates the collection
-   with `ics_microapp_access_set`, or the preview answers `forbidden`.
+4. Before the first preview: a sync acts as the person who runs it, under
+   the app's rules. Give them (the owner too) a role that lists, creates
+   and updates every linked collection with `ics_microapp_access_set`,
+   lists the app only reads included (the sync writes their records into
+   the app), or the preview answers `forbidden`.
 5. `ics_sheets_preview(app)`: the first sync turns the rows into records
    (`creates`) and adds app records with no row (`appends`). Show the user,
    then `ics_sheets_apply`. ICS writes only values into existing columns and
-   new rows under the last one; it never adds or renames columns.
+   new rows under the last one of the append tab; it never adds or renames
+   columns or tabs, never moves or deletes rows, and leaves a `sheet`
+   column of a new row empty when the app has no value for it (a formula or
+   default there stays).
+
+### Before the first sync
+
+- A column owned by `app` is written from the app: at the first sync the
+  records created from rows take the app's value (its `default`) and that
+  value replaces what the sheet had in the column. When the column already
+  holds values people rely on, own it `both` if the update rule lets the
+  field change; if it does not (the field is `app`-owned by the rule
+  above), tell the user before the first sync that the app's values will
+  replace the sheet's in that column.
+- `tab_field` holds the tab's full title, set from the sheet: an edit made
+  in the app is overwritten at the next sync, and a record created in the
+  app gets it once its row is in the sheet. Parse what you need from it
+  (e.g. `2026-11` from "Orders 2026-11") in the page or a handler.
+- A key must be unique across all the mapping's tabs; inspect samples one
+  tab, so duplicates show up only in the preview (`duplicate_key` in
+  `issues`, the later row skipped). A record created in the app needs its
+  key value from the app (a form field or a handler), or it is reported
+  (`key_missing`) and gets no row.
+- A column computed by a formula gets no value in a row ICS appends: the
+  sheet fills it only when the formula covers the whole column (e.g.
+  `ARRAYFORMULA`), otherwise it stays empty until someone fills it in. Tell
+  the user when the app needs that value.
+- A tab per month or year grows: when the user adds one, call
+  `ics_sheets_link` with the same mappings, the new tab added to `tabs` and
+  `append_to` moved to it, keeping the old tabs. Name tabs by `sheet_id`
+  from inspect where you can: a renamed tab stays linked.
+- Rows skipped for a missing required value, an invalid value or a doubled
+  key are listed in the preview's `issues` with their tab and row.
 
 `account_mode`: `owner_account` (default; the app owner's Google account
 works for everyone allowed to run the sync, `app.control`; only the owner
 may choose it) or `per_user` (each person's own account, which must open
 the file; no fallback to the owner's). Records the update rule's
 `conditions` lock (e.g. `status: approved`) never take sheet values. A sync
-handles up to the app owner's `row_limit` rows (an ICS administrator sets
-it per user). `ics_sheets_unlink` removes a link (records and sheet stay).
+handles up to the app owner's `row_limit` rows, all linked tabs together
+(an ICS administrator sets it per user). `ics_sheets_unlink` removes the
+whole link (records and sheet stay).
 
-`auto_sync` (default `True` here): ICS syncs on its own as the app owner,
-on the owner's Google account, while the app is in use. App changes reach
-the sheet within seconds; edits typed into the sheet are read every 30
-seconds while people have the app open and every `auto_interval_seconds`
-(from `ics_sheets_status`, 120 by default) while it is awake without open
-pages. A sleeping or suspended app does not sync; waking it up (a request,
-or reading its data through ICS) syncs at once. It needs `owner_account`; a
-`per_user` link is always sent with it off. Set it `False` only when the
-user wants syncs on request. The first sync can still be run at once with
-preview and apply, to show the user what comes in. A preview with conflicts
-or an error stops the automatic sync until a person resolves it (the owner
-gets an ICS notification): `link.auto_error` says why (`conflicts`: preview,
-let the user decide, apply; any other code: fix the cause, then preview and
-apply). Automatic syncing resumes after that. Operations it made have
-`auto: true`.
+`auto_sync` (on for a new link; left out, an existing link keeps its value;
+switching to `owner_account` does not turn it on by itself): ICS syncs on its own as the app owner,
+on the owner's Google account, while the app is in use. App changes in any
+linked collection reach the sheet within seconds; edits typed into the
+sheet are read every 30 seconds while people have the app open and every
+`auto_interval_seconds` (from `ics_sheets_status`, 120 by default) while it
+is awake without open pages. A sleeping or suspended app does not sync;
+waking it up (a request, or reading its data through ICS) syncs at once. It
+needs `owner_account`; a `per_user` link is always sent with it off. Set it
+`False` only when the user wants syncs on request. The first sync can still
+be run at once with preview and apply, to show the user what comes in. A
+preview with conflicts or an error stops the automatic sync until a person
+resolves it (the owner gets an ICS notification): `link.auto_error` says
+why (`conflicts`: preview, let the user decide, apply; any other code: fix
+the cause, then preview and apply). Automatic syncing resumes after that.
+Operations it made have `auto: true`.
 
 ### Syncing
 
-1. `ics_sheets_status(app)`: the link (with `auto_sync`, `auto_checked_at`
-   and `auto_error`), `row_limit`, your rights, `my_google` and the recent
-   operations. `next` names what blocks a sync.
-2. `ics_sheets_preview(app)`: what a sync would change, nothing changed yet.
+1. `ics_sheets_status(app)`: the link (its `mappings`, `revision`,
+   `auto_sync`, `auto_checked_at` and `auto_error`), `row_limit`, your
+   rights, `my_google` and the recent operations. `next` names what blocks a
+   sync.
+2. `ics_sheets_preview(app)`: what one sync of the whole file would change,
+   nothing changed yet; each change names its `collection`, `tab` and `row`
+   (in that tab).
    `imports` go from the sheet to the app, `exports` from the app to the
    sheet, `creates` are rows that become records, `appends` are records
-   added to the sheet, `issues` are rows skipped until fixed. A `conflict` is
+   added to the sheet, `issues` are rows skipped until fixed and records
+   that get no row (`key_missing`, `removed_from_sheet`). A `conflict` is
    a cell changed on both sides since the last sync.
 3. Show the user the changes and ask them about every conflict: `app`
    keeps the app value and writes it to the sheet, `sheet` takes the sheet
@@ -423,8 +496,13 @@ apply). Automatic syncing resumes after that. Operations it made have
 
 A record whose row was deleted is reported (`removed_from_sheet`), never
 deleted in the app; a row of a record deleted in the app is reported
-(`record_not_in_app`), never created again. `sheet_headers_missing`: fix the
-link's `columns` from a fresh `ics_sheets_inspect`, not the sheet. An error
+(`record_not_in_app`), never created again. A row someone moved by hand
+between tabs of one mapping is the same record, its `tab_field` follows. A
+key found twice (`duplicate_key`, also across tabs) skips the later row
+until the user fixes it. `sheet_headers_missing` names the tab (`tab`): fix
+the mapping's `columns` or `tabs` from a fresh `ics_sheets_inspect`, not
+the sheet. A missing tab (`sheet_tab_not_found`) stops the sync of the
+whole file: ask the user what happened to it and fix the mapping. An error
 with `action: "request_access"`: the connected Google account cannot open
 the file; the user shares it with that account in Google.
 
@@ -445,6 +523,10 @@ carry over):
   cells back and never writes. Never apply or preview again to retry the
   write. If the check says `failed`, the app changes stay and the next
   preview offers the sheet cells again.
+- `sheet_sync_unsettled`: an earlier sync's sheet write (`operation_id`) is
+  not settled, so no new sync is planned, or a record could be appended
+  twice. Check it as above, then preview. A write younger than about 90
+  seconds stays `pending` after a check: wait and check again.
 
 ## What other tools do with a micro-application
 

@@ -53,6 +53,43 @@ class SheetColumn(BaseModel):
     )
 
 
+TabRef = Annotated[
+    int | Annotated[str, Field(min_length=1, max_length=100)],
+    Field(description="A tab: its name, or its `sheet_id` from ics_sheets_inspect."),
+]
+
+
+class SheetMapping(BaseModel):
+    """One collection of the app linked to one tab, or to several tabs whose
+    rows are records of the same kind (split by month, state, team...)."""
+
+    collection: str = Field(max_length=64, description="Collection of the active release.")
+    tabs: list[TabRef] = Field(
+        min_length=1,
+        max_length=50,
+        description="The tabs whose rows are this collection's records. Several tabs need "
+        "`key_field`; each tab must have every linked header in its first row.",
+    )
+    columns: list[SheetColumn] = Field(min_length=1, max_length=200)
+    key_field: str | None = Field(
+        None,
+        max_length=64,
+        description="A linked field unique across the tabs (a number, an e-mail) that "
+        "matches rows to records; required with several tabs.",
+    )
+    append_to: TabRef | None = Field(
+        None,
+        description="With several tabs: the tab records created in the app are added to. "
+        "Not needed when every column is owned by 'sheet' (the app only reads the tabs).",
+    )
+    tab_field: str | None = Field(
+        None,
+        max_length=64,
+        description="Optional string field (not a linked column) that takes the name of the "
+        "tab a record's row is in, e.g. the month or the state the tabs stand for.",
+    )
+
+
 class PackageFile(BaseModel):
     """One file of a micro-application package."""
 

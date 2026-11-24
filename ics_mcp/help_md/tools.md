@@ -327,10 +327,10 @@ cache them.
 - `ics_asset_versions(app)` / `ics_asset_diff(app, v1, v2)` (publishers): package versions with their `release_status`; the diff adds `app_changes`.
 - `ics_microapp_access(asset_id)`: what each permission unlocks, who can open the app and with what.
 - `ics_microapp_access_set(asset_id, user_email | project_id, roles, permissions, can_open?)`: set exactly these roles and permissions (and opening) in one idempotent call; prefer `roles`.
-- `ics_sheets_inspect(spreadsheet, tab?)`: headers, proposed field names and types, fill rate, uniqueness and samples of a Google spreadsheet, read with your Google account, to build an app around it.
-- `ics_sheets_link(slug_or_id, spreadsheet, tab, collection, columns, account_mode?, key_field?, paused?, auto_sync?)`: link the app's collection to a tab; no id column, rows match by `key_field` or by content. `auto_sync` (default on, `owner_account` only) keeps both sides in step without anyone running a sync; conflicts wait for the user.
-- `ics_sheets_unlink(slug_or_id)`: remove the link (asks first); records and sheet stay.
+- `ics_sheets_inspect(spreadsheet, tab?)`: every tab with its id and headers, groups of tabs with the same headers, and for one tab proposed field names and types, fill rate, uniqueness, formulas and samples, read with your Google account, to build an app around the file.
+- `ics_sheets_link(slug_or_id, spreadsheet, mappings, account_mode?, paused?, auto_sync?, expected_revision?)`: link the app to a spreadsheet file, one mapping per collection (`tabs`, `columns`, `key_field?`, `append_to?`, `tab_field?`); a mapping may take several tabs of one kind of record; all-`sheet` columns make a list the app only reads. No id column, rows match by `key_field` or by content. `auto_sync` (default on, `owner_account` only) keeps both sides in step without anyone running a sync; conflicts wait for the user.
+- `ics_sheets_unlink(slug_or_id)`: remove the whole link (asks first); records and sheet stay.
 - `ics_sheets_status(slug_or_id, operation_id?, check?)`: the app's Google Sheets link, your Google account, recent syncs, automatic sync state (`link.auto_error`); `check=True` settles an `uncertain` write by reading it back.
-- `ics_sheets_preview(slug_or_id)`: what a sync with the sheet would change, conflicts with their decision keys.
+- `ics_sheets_preview(slug_or_id)`: what one sync of the whole file would change, each change with its collection, tab and row; conflicts with their decision keys.
 - `ics_sheets_apply(slug_or_id, operation_id, decisions?)`: apply a preview of yours (asks first); after a 503 repeat it with the same `operation_id`.
 See `ics_help('micro-applications')`.
