@@ -352,6 +352,51 @@ log lines of the app and its publications, with secrets removed.
 `ics_asset_read` returns the app as you see it: its own view with the records filled in (each
 request with its state, each idea with its comments), then roles, data model and raw records.
 
+### Build an app on a Google spreadsheet
+
+> "Build an app on https://docs.google.com/spreadsheets/d/.../edit. Orders are in one tab per
+> month; staff take orders and change their status in the app; accounting keeps the Customers
+> tab in the sheet; Summary is a report."
+
+The assistant reads the file with your Google account (`ics_sheets_inspect`): every tab with its
+headers, the tabs that share their headers (often one kind of record split by month or state),
+the type of data in each column and which columns hold formulas. The first time it gives you
+`connect_url`: open it in the browser where you are signed in to ICS, accept Google's consent
+once and tell the assistant. That is the only step it cannot do for you.
+
+Then it decides what each tab is and links them all in one `ics_sheets_link`, one mapping per
+collection of the app:
+
+| The file has | The assistant links |
+|---|---|
+| One tab of records | one collection on that tab |
+| One kind of record over several tabs (a tab per month) | one collection over all of them, matched by a column with unique values, new records going to the tab you choose, the tab name kept on each record if it matters |
+| Tabs of different things used together | one collection per tab, synced together |
+| A list the app only reads (customers, prices) | a collection whose columns all belong to the sheet: nothing is written to its tabs |
+| A report, chart or summary | nothing: unlinked tabs are never read |
+
+It asks you what the data cannot tell, for example where new orders go, or whether a column
+people type in matters (a column the app owns is filled from the app at the first sync). It never
+asks you to change the sheet: no id column, no renamed headers. A tab it cannot link (merged
+headers, several tables in one tab) it names, and links the rest.
+
+The first sync starts with `ics_sheets_preview`: what comes into the app and goes into the
+sheet, each change with its collection, tab and row, conflicts to decide and skipped rows. You
+decide each conflict; `ics_sheets_apply` applies it and asks for confirmation. Automatic sync is
+on by default for a link on the owner's account: afterwards ICS keeps both sides in step by
+itself and only waits for you on a conflict. `ics_sheets_status` shows the link and the recent
+syncs.
+
+Later changes go through the same call, and nothing already agreed is lost:
+
+> "Add the December tab to orders and send new orders there."
+> "Also link the Price list tab, read-only."
+> "Turn automatic sync off."
+
+The assistant sends the whole link again with the revision it read (`expected_revision`);
+settings it does not name, such as the Google account or automatic sync, stay as they were. What
+the sync does in ICS is described in the ICS [Google Sheets guide](https://github.com/inprojectspl/ics/blob/main/docs/guide/google-sheets.md).
+
 ### Compare releases
 
 > "What changed in the register since the last release?"
