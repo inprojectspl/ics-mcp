@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Micro-application help: pages may use inline styles, images from any `https:` host (map tiles)
+  and `fetch` to the hosts declared in `frontend.connect` (ICS ADR-0034); scripts still come only
+  from `public/`.
 - Google Sheets links per spreadsheet file (ICS ADR-0033). `ics_sheets_link` takes `mappings`, one per
   collection: one tab, several tabs of one kind of record (a tab per month, state or team, with a
   `key_field` unique across them, `append_to` for new records and an optional `tab_field`), or a list

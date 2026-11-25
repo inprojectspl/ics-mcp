@@ -42,8 +42,13 @@ Tens of users, thousands to tens of thousands of records.
 
 **Does not exist** (and the usual way around it):
 
-- No network: no external APIs, webhooks, CDN scripts or fonts (CSP allows
-  only the app's own origin). Bundle libraries into `public/`.
+- No scripts from outside: no CDN scripts or inline `<script>`; bundle
+  libraries (Leaflet, MapLibre, Three.js) into `public/`. Inline styles and
+  images or media from any `https:` host (map tiles) work. `fetch` and
+  WebSocket reach only the app's origin and the hosts listed in
+  `"frontend": {"connect": ["tiles.openfreemap.org", "*.maptiler.com"]}`
+  (up to 20, no IPs, ports or paths); `app_changes` lists them as
+  `external_host`. Handlers have no network at all, so no webhooks.
 - No e-mail, chat or push notifications. The page shows what changed.
 - No scheduled or background jobs: code runs only when someone calls an
   endpoint. Do periodic work on a button or when the page opens.
