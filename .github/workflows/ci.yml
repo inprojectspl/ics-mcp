@@ -56,7 +56,7 @@ jobs:
               --method "$1" | tee "$2"
           }
           inspect tools/list inspector-tools.json
-          python scripts/assert_count.py inspector-tools.json tools 72
+          python scripts/assert_count.py inspector-tools.json tools 73
           inspect resources/templates/list inspector-templates.json
           python scripts/assert_count.py inspector-templates.json resourceTemplates 6
           inspect prompts/list inspector-prompts.json
