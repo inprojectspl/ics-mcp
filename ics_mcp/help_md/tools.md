@@ -45,6 +45,8 @@
 - `ics_projects_list`, `ics_shares_list`.
 - `ics_project_create(name, description?)`: a new project owned by the caller
   (not idempotent: after a lost response check `ics_projects_list`).
+- `ics_project_members(project)`: who belongs to a project (by slug): email,
+  name, role and `status` (`member`, or `invited` until accepted, no access yet).
 
 ## Read
 - `ics_asset_read`: content of one file (details below).

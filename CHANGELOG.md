@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ics_project_members` (`project`: slug): the people of a project with their email, name, role and whether
+  they accepted the invitation, so an agent can answer who has access through a project. Needs ICS
+  with `GET /api/projects/{slug}/members`.
+
 ### Changed
 
 - Micro-application help: pages may use inline styles, images from any `https:` host (map tiles)

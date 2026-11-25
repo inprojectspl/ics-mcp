@@ -713,3 +713,52 @@ async def test_project_create(real_client, respx_mock, make_mcp):
     assert payload["my_role"] == "owner"
     await call_tool(mcp, "ics_project_create", {"name": "Bare"})
     assert json.loads(route.calls[1].request.content) == {"name": "Bare"}
+
+
+@pytest.mark.asyncio
+@respx.mock(assert_all_called=False)
+async def test_project_members(real_client, respx_mock, make_mcp):
+    from ics_mcp.tools import projects
+
+    mcp = make_mcp(projects)
+    respx_mock.get(f"{ICS}/api/projects/bb-africa/members").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "id": "p-id",
+                "slug": "bb-africa",
+                "name": "BB Africa",
+                "my_role": "editor",
+                "member_count": 1,
+                "members": [
+                    {
+                        "id": "m1",
+                        "user_id": "u1",
+                        "email": "tatiana@example.com",
+                        "display_name": "Tatiana",
+                        "role": "viewer",
+                        "invited_at": "2026-11-01T10:00:00+00:00",
+                        "accepted_at": "2026-11-02T10:00:00+00:00",
+                        "invited_by": "u0",
+                    },
+                    {
+                        "id": "m2",
+                        "user_id": "u2",
+                        "email": "new@example.com",
+                        "display_name": None,
+                        "role": "editor",
+                        "invited_at": "2026-11-20T10:00:00+00:00",
+                        "accepted_at": None,
+                        "invited_by": "u0",
+                    },
+                ],
+            },
+        )
+    )
+    payload = await call_tool(mcp, "ics_project_members", {"project": "bb-africa"})
+    assert payload["project"] == {"slug": "bb-africa", "name": "BB Africa", "my_role": "editor"}
+    assert payload["member_count"] == 1
+    assert [(m["email"], m["role"], m["status"]) for m in payload["members"]] == [
+        ("tatiana@example.com", "viewer", "member"),
+        ("new@example.com", "editor", "invited"),
+    ]

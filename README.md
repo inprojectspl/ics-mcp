@@ -20,7 +20,7 @@ sharing team documents.
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776ab?style=flat-square&logo=python&logoColor=white)](./pyproject.toml)
 [![MCP 2025-11-25](https://img.shields.io/badge/MCP-2025--11--25-ff5500?style=flat-square)](https://modelcontextprotocol.io/specification/2025-11-25)
 [![FastMCP 3](https://img.shields.io/badge/FastMCP-3.x-111827?style=flat-square)](https://gofastmcp.com)
-[![72 tools](https://img.shields.io/badge/tools-72-059669?style=flat-square)](#tools)
+[![73 tools](https://img.shields.io/badge/tools-73-059669?style=flat-square)](#tools)
 
 [User guide](https://inprojectspl.github.io/ics-mcp/) ·
 [Quick start](#quick-start) ·
@@ -46,7 +46,7 @@ sharing team documents.
 - **Acts as you, never more.** Every tool call is a request to the ICS user-level API with the
   signed-in user's OAuth token. No shared service account and no administration tools; an
   administrator's token still carries that administrator's access.
-- **72 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
+- **73 tools with full MCP annotations** for discovery, reading, Markdown and HTML writes, PDF and
   Word documents, versions, sharing, the relation graph and task context.
 - **Safe destructive operations.** Deletes and overwrites go through a confirmation gate:
   interactive elicitation, scripted `yolo` (only when the operator allows it) or `dry_run`.
@@ -227,7 +227,7 @@ uv run python scripts/check_remote.py \
 
 ## Tools
 
-72 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
+73 tools. Every one declares all four MCP annotations (`readOnlyHint`, `destructiveHint`,
 `idempotentHint`, `openWorldHint`) and returns structured content. Documents are addressed by
 `slug_or_id` (a slug or a UUID), except `ics_asset_undelete` and `ics_asset_purge`, which work on
 the trash and need the UUID from `ics_trash_list`.
@@ -237,7 +237,7 @@ the trash and need the UUID from `ics_trash_list`.
 |---|---|
 | Session and help | `ics_help`, `ics_whoami`, `ics_session_set_mode`, `ics_session_status` |
 | Discovery | `ics_assets_list`, `ics_assets_search`, `ics_asset_meta`, `ics_asset_list_files`, `ics_asset_outline`, `ics_projects_list`, `ics_shares_list` |
-| Projects | `ics_project_create` |
+| Projects | `ics_project_create`, `ics_project_members` |
 | Read | `ics_asset_read`, `ics_asset_ocr`, `ics_asset_read_rendered`, `ics_asset_versions`, `ics_asset_diff`, `ics_share_resolve`, `ics_publication_get` |
 | Write Markdown | `ics_asset_create_md`, `ics_asset_create_collection`, `ics_asset_rename`, `ics_asset_update_content`, `ics_asset_add_file`, `ics_asset_create_empty_file`, `ics_asset_move_file`, `ics_asset_delete_file`, `ics_asset_pin`, `ics_asset_set_tags` |
 | Archive and trash | `ics_asset_archive`, `ics_asset_delete`, `ics_trash_list`, `ics_asset_undelete`, `ics_asset_purge` |
@@ -278,6 +278,7 @@ reads from disk (stdio only), which keeps large files out of the model's context
 | `ics_asset_outline(slug_or_id, wait?, edges?, max_level?, offset?)` | Structure (headings with `line`, `end_line` and `anchor`, files, wikilink graph) without content; outgoing relations with `edges=true`. |
 | `ics_projects_list()` | Projects visible to the user. |
 | `ics_project_create(name, description?)` | New project owned by the user. Not idempotent. |
+| `ics_project_members(project)` | People of a project: email, name, role, member or invited. |
 | `ics_shares_list(slug_or_id)` | Share links and user grants of a document. |
 
 **Micro-applications** (ICS `ics.microapp/v1alpha1`, needs ICS with micro-applications enabled)
